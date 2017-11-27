@@ -1,0 +1,13 @@
+[package]
+name = "roundops"
+version = "0.0.1"
+authors = ["GNQG"]
+readme = "README.md"
+license = "MIT"
+description = ""
+repository = "https://github.com/GNQG/roundops"
+keywords = ["math", "number", "float", "rounding"]
+categories = ["algorithms"]
+
+[dependencies]
+safeeft = "^0.0.2"
