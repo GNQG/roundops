@@ -21,7 +21,7 @@ fn succ(x: f64) -> f64 {
     if abs >= pm969 {
         x + abs * (pm53 + pm105)
     } else if abs < pm1021 {
-        x + abs * pm1071
+        x + pm1071
     } else {
         let c = x * p53;
         let e = (pm53 + pm105) * c.abs();
@@ -42,7 +42,7 @@ fn pred(x: f64) -> f64 {
     if abs >= pm969 {
         x - abs * (pm53 + pm105)
     } else if abs < pm1021 {
-        x - abs * pm1071
+        x - pm1071
     } else {
         let c = x * p53;
         let e = (pm53 + pm105) * c.abs();
