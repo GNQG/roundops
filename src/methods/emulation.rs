@@ -3,11 +3,11 @@ use core::marker::PhantomData;
 
 use roundops::*;
 use super::safeeft::{safetwosum_straight as twosum, safetwoproduct_branch as twoproduct};
-use super::{succ,pred};
+use super::{succ, pred};
 
 pub struct Emulation<T>(PhantomData<fn(T)>);
 
-impl RoundAdd for Emulation<f32>{
+impl RoundAdd for Emulation<f32> {
     type Num = f32;
     fn add_up(a: f32, b: f32) -> f32 {
         unimplemented!()
@@ -17,10 +17,10 @@ impl RoundAdd for Emulation<f32>{
     }
 }
 
-impl RoundAdd for Emulation<f64>{
+impl RoundAdd for Emulation<f64> {
     type Num = f64;
     fn add_up(a: f64, b: f64) -> f64 {
-        let (x, _) = twosum(a, b);
+        let (x, y) = twosum(a, b);
         if x == f64::INFINITY {
             x
         } else if x == f64::NEG_INFINITY {
@@ -30,11 +30,11 @@ impl RoundAdd for Emulation<f64>{
                 f64::MIN
             }
         } else {
-            succ(x)
+            if y > 0. { succ(x) } else { x }
         }
     }
     fn add_down(a: f64, b: f64) -> f64 {
-        let (x, _) = twosum(a, b);
+        let (x, y) = twosum(a, b);
         if x == f64::INFINITY {
             if a == f64::NEG_INFINITY || b == f64::NEG_INFINITY {
                 x
@@ -44,22 +44,24 @@ impl RoundAdd for Emulation<f64>{
         } else if x == f64::NEG_INFINITY {
             x
         } else {
-            pred(x)
+            if y < 0. { pred(x) } else { x }
         }
     }
 }
 
-impl RoundSub for Emulation<f64>{
+impl RoundSub for Emulation<f64> {
     type Num = f64;
+    #[inline]
     fn sub_up(a: f64, b: f64) -> f64 {
         Self::add_up(a, -b)
     }
+    #[inline]
     fn sub_down(a: f64, b: f64) -> f64 {
         Self::add_down(a, -b)
     }
 }
 
-impl RoundMul for Emulation<f64>{
+impl RoundMul for Emulation<f64> {
     type Num = f64;
     fn mul_up(a: f64, b: f64) -> f64 {
         let (x, y) = twoproduct(a, b);
@@ -74,11 +76,7 @@ impl RoundMul for Emulation<f64>{
         } else {
             let (p537, pm969) = (2f64.powi(537), 2f64.powi(-969));
             if x.abs() > pm969 {
-                if y > 0. {
-                    succ(x)
-                } else {
-                    x
-                }
+                if y > 0. { succ(x) } else { x }
             } else {
                 let (s_h, s_l) = twoproduct(a * p537, b * p537); // TODO: check
                 let t = (x * p537) * p537;
@@ -104,11 +102,7 @@ impl RoundMul for Emulation<f64>{
         } else {
             let (p537, pm969) = (2f64.powi(537), 2f64.powi(-969));
             if x.abs() > pm969 {
-                if y < 0. {
-                    pred(x)
-                } else {
-                    x
-                }
+                if y < 0. { pred(x) } else { x }
             } else {
                 let (s_h, s_l) = twoproduct(a * p537, b * p537);
                 let t = (x * p537) * p537;
@@ -122,20 +116,15 @@ impl RoundMul for Emulation<f64>{
     }
 }
 
-impl RoundDiv for Emulation<f64>{
+impl RoundDiv for Emulation<f64> {
     type Num = f64;
     fn div_up(a: f64, b: f64) -> f64 {
         if a == 0. || b == 0. || a.abs() == f64::INFINITY || b.abs() == f64::INFINITY ||
-            a != a || b != b
-        {
+           a != a || b != b {
             a / b
         } else {
-            let (p105, p918, pm969, pm1074) = (
-                2f64.powi(105),
-                2f64.powi(918),
-                2f64.powi(-969),
-                2f64.powi(-1074),
-            );
+            let (p105, p918, pm969, pm1074) =
+                (2f64.powi(105), 2f64.powi(918), 2f64.powi(-969), 2f64.powi(-1074));
             let (mut ss, mut bb) = (a, b);
             if b < 0. {
                 ss *= -1.;
@@ -155,11 +144,7 @@ impl RoundDiv for Emulation<f64>{
             }
             let d = ss / bb;
             if d.is_infinite() {
-                if d > 0. {
-                    d
-                } else {
-                    f64::MIN
-                }
+                if d > 0. { d } else { f64::MIN }
             } else {
                 let (x, y) = twoproduct(d, bb);
                 if x < ss || (x == ss && y < 0.) {
@@ -172,16 +157,11 @@ impl RoundDiv for Emulation<f64>{
     }
     fn div_down(a: f64, b: f64) -> f64 {
         if a == 0. || b == 0. || a.abs() == f64::INFINITY || b.abs() == f64::INFINITY ||
-            a != a || b != b
-        {
+           a != a || b != b {
             a / b
         } else {
-            let (p105, p918, pm969, pm1074) = (
-                2f64.powi(105),
-                2f64.powi(918),
-                2f64.powi(-969),
-                2f64.powi(-1074),
-            );
+            let (p105, p918, pm969, pm1074) =
+                (2f64.powi(105), 2f64.powi(918), 2f64.powi(-969), 2f64.powi(-1074));
             let (mut ss, mut bb) = (a, b);
 
             if b < 0. {
@@ -202,11 +182,7 @@ impl RoundDiv for Emulation<f64>{
             }
             let d = ss / bb;
             if d.is_infinite() {
-                if d > 0. {
-                    f64::MAX
-                } else {
-                    d
-                }
+                if d > 0. { f64::MAX } else { d }
             } else {
                 let (x, y) = twoproduct(d, bb);
                 if x > ss || (x == ss && y > 0.) {
@@ -219,7 +195,7 @@ impl RoundDiv for Emulation<f64>{
     }
 }
 
-impl RoundSqrt<f64> for Emulation<f64>{
+impl RoundSqrt<f64> for Emulation<f64> {
     fn sqrt_up(a: f64) -> f64 {
         let (p53, pm969) = (2f64.powi(53), 2f64.powi(-969));
         let r = a.sqrt();
