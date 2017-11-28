@@ -208,7 +208,7 @@ impl RoundSqrt for Emulation<f64> {
                 r
             }
         } else {
-            let (x, y) = twoproduct(a, a); // TODO: check
+            let (x, y) = twoproduct(r, r);
             if x < a || (x == a && y < 0.) {
                 succ(r)
             } else {
@@ -228,7 +228,7 @@ impl RoundSqrt for Emulation<f64> {
                 r
             }
         } else {
-            let (x, y) = twoproduct(a, a); // TODO: check
+            let (x, y) = twoproduct(r, r);
             if x > a || (x == a && y > 0.) {
                 pred(r)
             } else {
