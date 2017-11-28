@@ -195,7 +195,7 @@ impl RoundDiv for Emulation<f64> {
     }
 }
 
-impl RoundSqrt<f64> for Emulation<f64> {
+impl RoundSqrt for Emulation<f64> {
     fn sqrt_up(a: f64) -> f64 {
         let (p53, pm969) = (2f64.powi(53), 2f64.powi(-969));
         let r = a.sqrt();

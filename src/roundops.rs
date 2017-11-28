@@ -24,9 +24,9 @@ pub trait RoundDiv {
     fn div_down(lhs: Self::Num, rhs: Self::Num) -> Self::Num;
 }
 
-pub trait RoundSqrt<T: Mul>: RoundMul<Num = T> {
-    fn sqrt_up(n: T) -> T;
-    fn sqrt_down(n: T) -> T;
+pub trait RoundSqrt: RoundMul {
+    fn sqrt_up(n: <Self as RoundMul>::Num) -> <Self as RoundMul>::Num;
+    fn sqrt_down(n: <Self as RoundMul>::Num) -> <Self as RoundMul>::Num;
 }
 
 
@@ -35,8 +35,8 @@ pub trait RoundOps<T: Add + Sub + Mul + Div>
     {
 }
 
-impl<S, T: Add + Sub + Mul + Div> RoundOps<T> for S
-where
-    S: RoundAdd<Num = T> + RoundSub<Num = T> + RoundMul<Num = T> + RoundDiv<Num = T>,
+impl<S, T> RoundOps<T> for S
+    where S: RoundAdd<Num = T> + RoundSub<Num = T> + RoundMul<Num = T> + RoundDiv<Num = T>,
+          T: Add + Sub + Mul + Div
 {
 }
