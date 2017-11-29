@@ -127,3 +127,64 @@ impl RoundSqrt for SuccPred<f64> {
         }
     }
 }
+
+mod tests {
+    use super::SuccPred;
+    use roundops::*;
+    use super::{succ, pred};
+
+    type SPf64 = SuccPred<f64>;
+
+    #[test]
+    fn addition() {
+        let (a, b) = (pred(1.), pred(10.));
+        let (x, y) = (SPf64::add_up(a, b), SPf64::add_down(a, b));
+        assert!(y == pred(a + b) && succ(a + b) == x);
+    }
+
+    #[test]
+    fn subtraction() {
+        let (a, b) = (pred(1.), pred(10.));
+        let (x, y) = (SPf64::sub_up(a, b), SPf64::sub_down(a, b));
+        assert!(y == pred(a - b) && succ(a - b) == x);
+    }
+
+    #[test]
+    fn multiplication() {
+        let (a, b) = (pred(1.), pred(10.));
+        let (x, y) = (SPf64::mul_up(a, b), SPf64::mul_down(a, b));
+        assert!(y == pred(a * b) && succ(a * b) == x);
+    }
+
+    #[test]
+    fn division() {
+        for &(a, b) in [
+            (3., 123.),
+            (2345.56, -74.12),
+            (254634.13590234, 245.4556),
+            (32.1, 123.122),
+        ].iter()
+        {
+            let (x, y) = (SPf64::div_up(a, b), SPf64::div_down(a, b));
+            assert!(y == pred(a / b) && succ(a / b) == x);
+        }
+    }
+
+    #[test]
+    fn sqrt() {
+        for &a in [
+            3.,
+            123.,
+            2345.56,
+            74.12,
+            254634.13590234,
+            245.4556,
+            32.1,
+            123.122,
+        ].iter()
+        {
+            let (x, y) = (SPf64::sqrt_up(a), SPf64::sqrt_down(a));
+            assert!(y == pred(a.sqrt()) && succ(a.sqrt()) == x);
+        }
+    }
+}

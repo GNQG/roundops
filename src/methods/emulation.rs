@@ -30,7 +30,11 @@ impl RoundAdd for Emulation<f64> {
                 f64::MIN
             }
         } else {
-            if y > 0. { succ(x) } else { x }
+            if y > 0. {
+                succ(x)
+            } else {
+                x
+            }
         }
     }
     fn add_down(a: f64, b: f64) -> f64 {
@@ -44,7 +48,11 @@ impl RoundAdd for Emulation<f64> {
         } else if x == f64::NEG_INFINITY {
             x
         } else {
-            if y < 0. { pred(x) } else { x }
+            if y < 0. {
+                pred(x)
+            } else {
+                x
+            }
         }
     }
 }
@@ -76,7 +84,11 @@ impl RoundMul for Emulation<f64> {
         } else {
             let (p537, pm969) = (2f64.powi(537), 2f64.powi(-969));
             if x.abs() > pm969 {
-                if y > 0. { succ(x) } else { x }
+                if y > 0. {
+                    succ(x)
+                } else {
+                    x
+                }
             } else {
                 let (s_h, s_l) = twoproduct(a * p537, b * p537); // TODO: check
                 let t = (x * p537) * p537;
@@ -102,7 +114,11 @@ impl RoundMul for Emulation<f64> {
         } else {
             let (p537, pm969) = (2f64.powi(537), 2f64.powi(-969));
             if x.abs() > pm969 {
-                if y < 0. { pred(x) } else { x }
+                if y < 0. {
+                    pred(x)
+                } else {
+                    x
+                }
             } else {
                 let (s_h, s_l) = twoproduct(a * p537, b * p537);
                 let t = (x * p537) * p537;
@@ -120,11 +136,16 @@ impl RoundDiv for Emulation<f64> {
     type Num = f64;
     fn div_up(a: f64, b: f64) -> f64 {
         if a == 0. || b == 0. || a.abs() == f64::INFINITY || b.abs() == f64::INFINITY ||
-           a != a || b != b {
+            a != a || b != b
+        {
             a / b
         } else {
-            let (p105, p918, pm969, pm1074) =
-                (2f64.powi(105), 2f64.powi(918), 2f64.powi(-969), 2f64.powi(-1074));
+            let (p105, p918, pm969, pm1074) = (
+                2f64.powi(105),
+                2f64.powi(918),
+                2f64.powi(-969),
+                2f64.powi(-1000) * 2f64.powi(-74),
+            );
             let (mut ss, mut bb) = (a, b);
             if b < 0. {
                 ss *= -1.;
@@ -144,10 +165,14 @@ impl RoundDiv for Emulation<f64> {
             }
             let d = ss / bb;
             if d.is_infinite() {
-                if d > 0. { d } else { f64::MIN }
+                if d > 0. {
+                    d
+                } else {
+                    f64::MIN
+                }
             } else {
                 let (x, y) = twoproduct(d, bb);
-                if x < ss || (x == ss && y < 0.) {
+                if x < ss || (x == ss && y > 0.) {
                     succ(d)
                 } else {
                     d
@@ -157,11 +182,16 @@ impl RoundDiv for Emulation<f64> {
     }
     fn div_down(a: f64, b: f64) -> f64 {
         if a == 0. || b == 0. || a.abs() == f64::INFINITY || b.abs() == f64::INFINITY ||
-           a != a || b != b {
+            a != a || b != b
+        {
             a / b
         } else {
-            let (p105, p918, pm969, pm1074) =
-                (2f64.powi(105), 2f64.powi(918), 2f64.powi(-969), 2f64.powi(-1074));
+            let (p105, p918, pm969, pm1074) = (
+                2f64.powi(105),
+                2f64.powi(918),
+                2f64.powi(-969),
+                2f64.powi(-1000) * 2f64.powi(-74),
+            );
             let (mut ss, mut bb) = (a, b);
 
             if b < 0. {
@@ -182,10 +212,14 @@ impl RoundDiv for Emulation<f64> {
             }
             let d = ss / bb;
             if d.is_infinite() {
-                if d > 0. { f64::MAX } else { d }
+                if d > 0. {
+                    f64::MAX
+                } else {
+                    d
+                }
             } else {
                 let (x, y) = twoproduct(d, bb);
-                if x > ss || (x == ss && y > 0.) {
+                if x > ss || (x == ss && y < 0.) {
                     pred(d)
                 } else {
                     d
@@ -234,6 +268,75 @@ impl RoundSqrt for Emulation<f64> {
             } else {
                 r
             }
+        }
+    }
+}
+
+mod tests {
+    use super::Emulation;
+    use roundops::*;
+    use super::{succ, pred};
+
+    type Emuf64 = Emulation<f64>;
+
+    #[test]
+    fn addition() {
+        let (a, b) = (pred(1.), pred(10.));
+        let (x, y) = (Emuf64::add_up(a, b), Emuf64::add_down(a, b));
+        assert!(x == succ(y) || x == y);
+        assert!(y <= a + b && a + b <= x);
+    }
+
+    #[test]
+    fn subtraction() {
+        let (a, b) = (pred(1.), pred(10.));
+        let (x, y) = (Emuf64::sub_up(a, b), Emuf64::sub_down(a, b));
+        assert!(x == succ(y) || x == y);
+        assert!(y <= a - b && a - b <= x);
+    }
+
+    #[test]
+    fn multiplication() {
+        let (a, b) = (pred(1.), pred(10.));
+        let (x, y) = (Emuf64::mul_up(a, b), Emuf64::mul_down(a, b));
+        assert!(x == succ(y) || x == y);
+        assert!(y <= a * b || a * b <= x);
+    }
+
+    #[test]
+    fn division() {
+        for &(a, b) in [
+            (3., 123.),
+            (2345.56, -74.12),
+            (254634.13590234, 245.4556),
+            (32.1, 123.122),
+        ].iter()
+        {
+            let (x, y) = (Emuf64::div_up(a, b), Emuf64::div_down(a, b));
+            assert!(x == succ(y) || x == y);
+            assert!(y <= a / b && a / b <= x);
+        }
+    }
+
+    #[test]
+    fn sqrt() {
+        for &a in [
+            3.,
+            123.,
+            2345.56,
+            74.12,
+            254634.13590234,
+            245.4556,
+            32.1,
+            123.122,
+        ].iter()
+        {
+            use super::twoproduct;
+            let (x, y) = (Emuf64::sqrt_up(a), Emuf64::sqrt_down(a));
+            println!("{:e}, [{:e}, {:e}]", a.sqrt(), y, x);
+            println!("{:?}",twoproduct(a.sqrt(),a.sqrt()));
+            assert!(x == succ(y) || x == y);
+            assert!(y <= a.sqrt() && a.sqrt() <= x);
         }
     }
 }
