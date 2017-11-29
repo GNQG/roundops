@@ -1,7 +1,9 @@
 extern crate core;
+extern crate num_traits;
 
 mod roundops;
 pub mod methods;
+pub mod utils;
 
 pub use roundops::*;
 

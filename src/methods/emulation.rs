@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 
 use roundops::*;
 use super::safeeft::{safetwosum_straight as twosum, safetwoproduct_branch as twoproduct};
-use super::{succ, pred};
+use utils::{succ, pred};
 
 pub struct Emulation<T>(PhantomData<fn(T)>);
 

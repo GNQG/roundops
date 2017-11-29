@@ -11,3 +11,4 @@ categories = ["algorithms"]
 
 [dependencies]
 safeeft = "^0.0.2"
+num-traits = "^0.1.40"
