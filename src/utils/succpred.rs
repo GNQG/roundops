@@ -26,7 +26,7 @@ impl<T: Float> FloatSuccPred for T {
     fn succ(self) -> Self {
         let abs = self.abs();
         if abs >= Self::min_pos_inveps() {
-            self + abs * (Self::inveps() + Self::two_invepsp2())
+            self + abs * (Self::eps() * Self::eps() * (Self::inveps() + Self::two_invepsp2()))
         } else if abs < Self::min_pos() {
             self + Self::min_pos_subnormal()
         } else {
@@ -38,7 +38,7 @@ impl<T: Float> FloatSuccPred for T {
     fn pred(self) -> Self {
         let abs = self.abs();
         if abs >= Self::min_pos_inveps() {
-            self - abs * (Self::inveps() + Self::two_invepsp2())
+            self - abs * (Self::eps() * Self::eps() * (Self::inveps() + Self::two_invepsp2()))
         } else if abs < Self::min_pos() {
             self - Self::min_pos_subnormal()
         } else {
