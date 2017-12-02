@@ -2,4 +2,4 @@
 
 Rounded arithmetics for numerical types.
 
-Now supports only `f64` with emulation.
+Mainly supports types implementing [`float_traits::IEEE754Float`](https://docs.rs/float-traits).
