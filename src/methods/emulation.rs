@@ -1,129 +1,104 @@
-use core::f64;
 use core::marker::PhantomData;
+
+use float_traits::IEEE754Float;
 
 use roundops::*;
 use super::safeeft::{safetwosum_straight as twosum, safetwoproduct_branch as twoproduct};
-use utils::{succ, pred};
+use utils::FloatSuccPred;
 
 pub struct Emulation<T>(PhantomData<fn(T)>);
 
-impl RoundAdd for Emulation<f32> {
-    type Num = f32;
-    fn add_up(a: f32, b: f32) -> f32 {
-        unimplemented!()
-    }
-    fn add_down(a: f32, b: f32) -> f32 {
-        unimplemented!()
-    }
-}
-
-impl RoundAdd for Emulation<f64> {
-    type Num = f64;
-    fn add_up(a: f64, b: f64) -> f64 {
-        let (x, y) = twosum(a, b);
-        if x == f64::INFINITY {
+impl<T: IEEE754Float + Clone> RoundAdd for Emulation<T> {
+    type Num = T;
+    fn add_up(a: T, b: T) -> T {
+        let (x, y) = twosum(a.clone(), b.clone());
+        if x == T::infinity() {
             x
-        } else if x == f64::NEG_INFINITY {
-            if a == f64::NEG_INFINITY || b == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
+            if a == T::neg_infinity() || b == T::neg_infinity() {
                 x
             } else {
-                f64::MIN
+                T::min_value()
             }
         } else {
-            if y > 0. {
-                succ(x)
-            } else {
-                x
-            }
+            if y > T::zero() { x.succ() } else { x }
         }
     }
-    fn add_down(a: f64, b: f64) -> f64 {
-        let (x, y) = twosum(a, b);
-        if x == f64::INFINITY {
-            if a == f64::NEG_INFINITY || b == f64::NEG_INFINITY {
+    fn add_down(a: T, b: T) -> T {
+        let (x, y) = twosum(a.clone(), b.clone());
+        if x == T::infinity() {
+            if a == T::neg_infinity() || b == T::neg_infinity() {
                 x
             } else {
-                f64::MAX
+                T::max_value()
             }
-        } else if x == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
             x
         } else {
-            if y < 0. {
-                pred(x)
-            } else {
-                x
-            }
+            if y < T::zero() { x.pred() } else { x }
         }
     }
 }
 
-impl RoundSub for Emulation<f64> {
-    type Num = f64;
+impl<T: IEEE754Float + Clone> RoundSub for Emulation<T> {
+    type Num = T;
     #[inline]
-    fn sub_up(a: f64, b: f64) -> f64 {
+    fn sub_up(a: T, b: T) -> T {
         Self::add_up(a, -b)
     }
     #[inline]
-    fn sub_down(a: f64, b: f64) -> f64 {
+    fn sub_down(a: T, b: T) -> T {
         Self::add_down(a, -b)
     }
 }
 
-impl RoundMul for Emulation<f64> {
-    type Num = f64;
-    fn mul_up(a: f64, b: f64) -> f64 {
-        let (x, y) = twoproduct(a, b);
-        if x == f64::INFINITY {
+impl<T: IEEE754Float + Clone> RoundMul for Emulation<T> {
+    type Num = T;
+    fn mul_up(a: T, b: T) -> T {
+        let (x, y) = twoproduct(a.clone(), b.clone());
+        if x == T::infinity() {
             x
-        } else if x == f64::NEG_INFINITY {
-            if a == f64::NEG_INFINITY || b == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
+            if a == T::neg_infinity() || b == T::neg_infinity() {
                 x
             } else {
-                f64::MIN
+                T::min_value()
             }
         } else {
-            let (p537, pm969) = (2f64.powi(537), 2f64.powi(-969));
-            if x.abs() > pm969 {
-                if y > 0. {
-                    succ(x)
-                } else {
-                    x
-                }
+            if x.clone().abs() > T::min_positive() / T::eps() * T::radix() {
+                if y > T::zero() { x.succ() } else { x }
             } else {
-                let (s_h, s_l) = twoproduct(a * p537, b * p537); // TODO: check
-                let t = (x * p537) * p537;
-                if t < s_h || (t == s_h && s_l > 0.) {
-                    succ(x)
+                let (s_h, s_l) = twoproduct(a * T::unit_underflow().sqrt(),
+                                            b * T::unit_underflow().sqrt()); // TODO: check
+                let t = (x.clone() * T::unit_underflow().sqrt()) * T::unit_underflow().sqrt();
+                if t < s_h || (t == s_h && s_l > T::zero()) {
+                    x.succ()
                 } else {
                     x
                 }
             }
         }
     }
-    fn mul_down(a: f64, b: f64) -> f64 {
-        let (x, y) = twoproduct(a, b);
-        if x == f64::INFINITY {
-            if a == f64::INFINITY || b == f64::INFINITY {
+    fn mul_down(a: T, b: T) -> T {
+        let (x, y) = twoproduct(a.clone(), b.clone());
+        if x == T::infinity() {
+            if a == T::infinity() || b == T::infinity() {
                 // TODO: check
                 x
             } else {
-                f64::MAX
+                T::max_value()
             }
-        } else if x == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
             x
         } else {
-            let (p537, pm969) = (2f64.powi(537), 2f64.powi(-969));
-            if x.abs() > pm969 {
-                if y < 0. {
-                    pred(x)
-                } else {
-                    x
-                }
+            if x.clone().abs() > T::min_positive() / T::eps() * T::radix() {
+                if y < T::zero() { x.pred() } else { x }
             } else {
-                let (s_h, s_l) = twoproduct(a * p537, b * p537);
-                let t = (x * p537) * p537;
-                if t > s_h || (t == s_h && s_l < 0.) {
-                    pred(x)
+                let (s_h, s_l) = twoproduct(a * T::unit_underflow().sqrt(),
+                                            b * T::unit_underflow().sqrt());
+                let t = (x.clone() * T::unit_underflow().sqrt()) * T::unit_underflow().sqrt();
+                if t > s_h || (t == s_h && s_l < T::zero()) {
+                    x.pred()
                 } else {
                     x
                 }
@@ -132,95 +107,73 @@ impl RoundMul for Emulation<f64> {
     }
 }
 
-impl RoundDiv for Emulation<f64> {
-    type Num = f64;
-    fn div_up(a: f64, b: f64) -> f64 {
-        if a == 0. || b == 0. || a.abs() == f64::INFINITY || b.abs() == f64::INFINITY ||
-            a != a || b != b
-        {
+impl<T: IEEE754Float + Clone> RoundDiv for Emulation<T> {
+    type Num = T;
+    fn div_up(a: T, b: T) -> T {
+        if a == T::zero() || b == T::zero() || a.clone().abs() == T::infinity() ||
+           b.clone().abs() == T::infinity() || a != a || b != b {
             a / b
         } else {
-            let (p105, p918, pm969, pm1074) = (
-                2f64.powi(105),
-                2f64.powi(918),
-                2f64.powi(-969),
-                2f64.powi(-1000) * 2f64.powi(-74),
-            );
             let (mut ss, mut bb) = (a, b);
-            if b < 0. {
-                ss *= -1.;
-                bb *= -1.;
+            if bb < T::zero() {
+                ss = ss * -T::one();
+                bb = bb * -T::one();
             }
-            if ss.abs() < pm969 {
-                if bb.abs() < p918 {
-                    ss *= p105;
-                    bb *= p105;
+            if ss.clone().abs() < T::min_positive() / T::eps() * T::radix() {
+                if bb.clone().abs() < T::min_positive() / T::eps() / T::eps() {
+                    ss = ss * T::radix() * T::eps() * T::eps();
+                    bb = bb * T::radix() * T::eps() * T::eps();
                 } else {
-                    if ss < 0. {
-                        return 0f64;
+                    if ss < T::zero() {
+                        return T::zero();
                     } else {
-                        return pm1074;
+                        return T::unit_underflow();
                     }
                 }
             }
-            let d = ss / bb;
+            let d = ss.clone() / bb.clone();
             if d.is_infinite() {
-                if d > 0. {
-                    d
-                } else {
-                    f64::MIN
-                }
+                if d > T::zero() { d } else { T::min_value() }
             } else {
-                let (x, y) = twoproduct(d, bb);
-                if x < ss || (x == ss && y > 0.) {
-                    succ(d)
+                let (x, y) = twoproduct(d.clone(), bb.clone());
+                if x < ss || (x == ss && y > T::zero()) {
+                    d.succ()
                 } else {
                     d
                 }
             }
         }
     }
-    fn div_down(a: f64, b: f64) -> f64 {
-        if a == 0. || b == 0. || a.abs() == f64::INFINITY || b.abs() == f64::INFINITY ||
-            a != a || b != b
-        {
+    fn div_down(a: T, b: T) -> T {
+        if a == T::zero() || b == T::zero() || a.clone().abs() == T::infinity() ||
+           b.clone().abs() == T::infinity() || a != a || b != b {
             a / b
         } else {
-            let (p105, p918, pm969, pm1074) = (
-                2f64.powi(105),
-                2f64.powi(918),
-                2f64.powi(-969),
-                2f64.powi(-1000) * 2f64.powi(-74),
-            );
             let (mut ss, mut bb) = (a, b);
 
-            if b < 0. {
-                ss *= -1.;
-                bb *= -1.;
+            if bb < T::zero() {
+                ss = ss * -T::one();
+                bb = bb * -T::one();
             }
-            if ss.abs() < pm969 {
-                if bb.abs() < p918 {
-                    ss *= p105;
-                    bb *= p105;
+            if ss.clone().abs() < T::min_positive() / T::eps() * T::radix() {
+                if bb.clone().abs() < T::min_positive() / T::eps() / T::eps() {
+                    ss = ss * T::radix() * T::eps() * T::eps();
+                    bb = bb * T::radix() * T::eps() * T::eps();
                 } else {
-                    if ss < 0. {
-                        return -pm1074;
+                    if ss < T::zero() {
+                        return -T::unit_underflow();
                     } else {
-                        return 0f64;
+                        return T::zero();
                     }
                 }
             }
-            let d = ss / bb;
+            let d = ss.clone() / bb.clone();
             if d.is_infinite() {
-                if d > 0. {
-                    f64::MAX
-                } else {
-                    d
-                }
+                if d > T::zero() { T::max_value() } else { d }
             } else {
-                let (x, y) = twoproduct(d, bb);
-                if x > ss || (x == ss && y < 0.) {
-                    pred(d)
+                let (x, y) = twoproduct(d.clone(), bb.clone());
+                if x > ss || (x == ss && y < T::zero()) {
+                    d.pred()
                 } else {
                     d
                 }
@@ -229,42 +182,42 @@ impl RoundDiv for Emulation<f64> {
     }
 }
 
-impl RoundSqrt for Emulation<f64> {
-    fn sqrt_up(a: f64) -> f64 {
-        let (p53, pm969) = (2f64.powi(53), 2f64.powi(-969));
-        let r = a.sqrt();
-        if a < pm969 {
-            let (ss, rr) = (a * p53 * p53, r * p53);
-            let (x, y) = twoproduct(ss, rr);
-            if x < ss || (x == ss && y < 0.) {
-                succ(r)
+impl<T: IEEE754Float + Clone> RoundSqrt for Emulation<T> {
+    fn sqrt_up(a: T) -> T {
+        let r = a.clone().sqrt();
+        if a < T::min_positive() / T::eps() * T::radix() {
+            let (ss, rr) = (a * T::radix() / T::eps() * T::radix() / T::eps(),
+                            r.clone() * T::radix() / T::eps());
+            let (x, y) = twoproduct(ss.clone(), rr.clone());
+            if x < ss || (x == ss && y < T::zero()) {
+                r.succ()
             } else {
                 r
             }
         } else {
-            let (x, y) = twoproduct(r, r);
-            if x < a || (x == a && y < 0.) {
-                succ(r)
+            let (x, y) = twoproduct(r.clone(), r.clone());
+            if x < a || (x == a && y < T::zero()) {
+                r.succ()
             } else {
                 r
             }
         }
     }
-    fn sqrt_down(a: f64) -> f64 {
-        let (p53, pm969) = (2f64.powi(53), 2f64.powi(-969));
-        let r = a.sqrt();
-        if a < pm969 {
-            let (ss, rr) = (a * p53 * p53, r * p53);
-            let (x, y) = twoproduct(ss, rr);
-            if x > ss || (x == ss && y > 0.) {
-                pred(r)
+    fn sqrt_down(a: T) -> T {
+        let r = a.clone().sqrt();
+        if a < T::min_positive() / T::eps() * T::radix() {
+            let (ss, rr) = (a * T::radix() / T::eps() * T::radix() / T::eps(),
+                            r.clone() * T::radix() / T::eps());
+            let (x, y) = twoproduct(ss.clone(), rr.clone());
+            if x > ss || (x == ss && y > T::zero()) {
+                r.pred()
             } else {
                 r
             }
         } else {
-            let (x, y) = twoproduct(r, r);
-            if x > a || (x == a && y > 0.) {
-                pred(r)
+            let (x, y) = twoproduct(r.clone(), r.clone());
+            if x > a || (x == a && y > T::zero()) {
+                r.pred()
             } else {
                 r
             }
@@ -273,69 +226,81 @@ impl RoundSqrt for Emulation<f64> {
 }
 
 mod tests {
-    use super::Emulation;
-    use roundops::*;
-    use super::{succ, pred};
-
-    type Emuf64 = Emulation<f64>;
-
     #[test]
     fn addition() {
-        let (a, b) = (pred(1.), pred(10.));
-        let (x, y) = (Emuf64::add_up(a, b), Emuf64::add_down(a, b));
-        assert!(x == succ(y) || x == y);
+        use super::Emulation;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = Emulation<f64>;
+
+        let (a, b) = ((1.).pred(), (10.).pred());
+        let (x, y) = (EmuT::add_up(a, b), EmuT::add_down(a, b));
+        assert!(x == y.succ() || x == y);
         assert!(y <= a + b && a + b <= x);
     }
 
     #[test]
     fn subtraction() {
-        let (a, b) = (pred(1.), pred(10.));
-        let (x, y) = (Emuf64::sub_up(a, b), Emuf64::sub_down(a, b));
-        assert!(x == succ(y) || x == y);
+        use super::Emulation;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = Emulation<f64>;
+
+        let (a, b) = ((1.).pred(), (10.).pred());
+        let (x, y) = (EmuT::sub_up(a, b), EmuT::sub_down(a, b));
+        assert!(x == y.succ() || x == y);
         assert!(y <= a - b && a - b <= x);
     }
 
     #[test]
     fn multiplication() {
-        let (a, b) = (pred(1.), pred(10.));
-        let (x, y) = (Emuf64::mul_up(a, b), Emuf64::mul_down(a, b));
-        assert!(x == succ(y) || x == y);
+        use super::Emulation;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = Emulation<f64>;
+
+        let (a, b) = ((1.).pred(), (10.).pred());
+        let (x, y) = (EmuT::mul_up(a, b), EmuT::mul_down(a, b));
+        assert!(x == y.succ() || x == y);
         assert!(y <= a * b || a * b <= x);
     }
 
     #[test]
     fn division() {
-        for &(a, b) in [
-            (3., 123.),
-            (2345.56, -74.12),
-            (254634.13590234, 245.4556),
-            (32.1, 123.122),
-        ].iter()
-        {
-            let (x, y) = (Emuf64::div_up(a, b), Emuf64::div_down(a, b));
-            assert!(x == succ(y) || x == y);
+        use super::Emulation;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = Emulation<f64>;
+
+        for &(a, b) in [(3., 123.),
+                        (2345.56, -74.12),
+                        (254634.13590234, 245.4556),
+                        (32.1, 123.122)]
+                    .iter() {
+            let (x, y) = (EmuT::div_up(a, b), EmuT::div_down(a, b));
+            assert!(x == y.succ() || x == y);
             assert!(y <= a / b && a / b <= x);
         }
     }
 
     #[test]
     fn sqrt() {
-        for &a in [
-            3.,
-            123.,
-            2345.56,
-            74.12,
-            254634.13590234,
-            245.4556,
-            32.1,
-            123.122,
-        ].iter()
-        {
+        use super::Emulation;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = Emulation<f64>;
+
+        for &a in [3., 123., 2345.56, 74.12, 254634.13590234, 245.4556, 32.1, 123.122].iter() {
             use super::twoproduct;
-            let (x, y) = (Emuf64::sqrt_up(a), Emuf64::sqrt_down(a));
+            let (x, y) = (EmuT::sqrt_up(a), EmuT::sqrt_down(a));
             println!("{:e}, [{:e}, {:e}]", a.sqrt(), y, x);
-            println!("{:?}",twoproduct(a.sqrt(),a.sqrt()));
-            assert!(x == succ(y) || x == y);
+            println!("{:?}", twoproduct(a.sqrt().clone(), a.sqrt(.clone())));
+            assert!(x == y.succ() || x == y);
             assert!(y <= a.sqrt() && a.sqrt() <= x);
         }
     }

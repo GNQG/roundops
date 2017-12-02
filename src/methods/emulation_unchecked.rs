@@ -1,87 +1,87 @@
-use core::f64;
 use core::marker::PhantomData;
 
 use roundops::*;
 use super::safeeft::{safetwosum_straight as twosum, safetwoproduct_branch as twoproduct};
-use utils::{succ, pred};
+use float_traits::IEEE754Float;
+use utils::FloatSuccPred;
 
 pub struct EmulationUnchecked<T>(PhantomData<fn(T)>);
 
-impl RoundAdd for EmulationUnchecked<f64> {
-    type Num = f64;
-    fn add_up(a: f64, b: f64) -> f64 {
+impl<T: IEEE754Float + Clone> RoundAdd for EmulationUnchecked<T> {
+    type Num = T;
+    fn add_up(a: T, b: T) -> T {
         let (x, y) = twosum(a, b);
-        if y > 0. { succ(x) } else { x }
+        if y > T::zero() { x.succ() } else { x }
     }
-    fn add_down(a: f64, b: f64) -> f64 {
+    fn add_down(a: T, b: T) -> T {
         let (x, y) = twosum(a, b);
-        if y < 0. { pred(x) } else { x }
+        if y < T::zero() { x.pred() } else { x }
     }
 }
 
-impl RoundSub for EmulationUnchecked<f64> {
-    type Num = f64;
+impl<T: IEEE754Float + Clone> RoundSub for EmulationUnchecked<T> {
+    type Num = T;
     #[inline]
-    fn sub_up(a: f64, b: f64) -> f64 {
+    fn sub_up(a: T, b: T) -> T {
         Self::add_up(a, -b)
     }
     #[inline]
-    fn sub_down(a: f64, b: f64) -> f64 {
+    fn sub_down(a: T, b: T) -> T {
         Self::add_down(a, -b)
     }
 }
 
-impl RoundMul for EmulationUnchecked<f64> {
-    type Num = f64;
-    fn mul_up(a: f64, b: f64) -> f64 {
+impl<T: IEEE754Float + Clone> RoundMul for EmulationUnchecked<T> {
+    type Num = T;
+    fn mul_up(a: T, b: T) -> T {
         let (x, y) = twoproduct(a, b);
-        if y > 0. { succ(x) } else { x }
+        if y > T::zero() { x.succ() } else { x }
     }
-    fn mul_down(a: f64, b: f64) -> f64 {
+    fn mul_down(a: T, b: T) -> T {
         let (x, y) = twoproduct(a, b);
-        if y < 0. { pred(x) } else { x }
+        if y < T::zero() { x.pred() } else { x }
     }
 }
 
-impl RoundDiv for EmulationUnchecked<f64> {
-    type Num = f64;
-    fn div_up(a: f64, b: f64) -> f64 {
-        let (a, b) = if b < 0. { (-a, -b) } else { (a, b) };
-        let d = a / b;
-        let (x, y) = twoproduct(d, b);
-        if x < a || (x == a && y > 0.) {
-            succ(d)
+impl<T: IEEE754Float + Clone> RoundDiv for EmulationUnchecked<T> {
+    type Num = T;
+    fn div_up(a: T, b: T) -> T {
+        let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
+        let d = a.clone() / b.clone();
+        let (x, y) = twoproduct(d.clone(), b);
+        if x < a || (x == a && y > T::zero()) {
+            d.succ()
         } else {
             d
         }
     }
-    fn div_down(a: f64, b: f64) -> f64 {
-        let (a, b) = if b < 0. { (-a, -b) } else { (a, b) };
-        let d = a / b;
-        let (x, y) = twoproduct(d, b);
-        if x > a || (x == a && y < 0.) {
-            pred(d)
+    fn div_down(a: T, b: T) -> T {
+        let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
+        let d = a.clone() / b.clone();
+        let (x, y) = twoproduct(d.clone(), b);
+        if x > a || (x == a && y < T::zero()) {
+            d.pred()
         } else {
             d
         }
     }
 }
 
-impl RoundSqrt for EmulationUnchecked<f64> {
-    fn sqrt_up(a: f64) -> f64 {
-        let r = a.sqrt();
-        let (x, y) = twoproduct(r, r);
-        if x < a || (x == a && y < 0.) {
-            succ(r)
+impl<T: IEEE754Float + Clone> RoundSqrt for EmulationUnchecked<T> {
+    fn sqrt_up(a: T) -> T {
+        let r = a.clone().sqrt();
+        let (x, y) = twoproduct(r.clone(), r.clone());
+        if x < a || (x == a && y < T::zero()) {
+            r.succ()
         } else {
             r
         }
     }
-    fn sqrt_down(a: f64) -> f64 {
-        let r = a.sqrt();
-        let (x, y) = twoproduct(r, r);
-        if x > a || (x == a && y > 0.) {
-            pred(r)
+    fn sqrt_down(a: T) -> T {
+        let r = a.clone().sqrt();
+        let (x, y) = twoproduct(r.clone(), r.clone());
+        if x > a || (x == a && y > T::zero()) {
+            r.pred()
         } else {
             r
         }
@@ -89,38 +89,52 @@ impl RoundSqrt for EmulationUnchecked<f64> {
 }
 
 mod tests {
-    use super::EmulationUnchecked;
-    use roundops::*;
-    use super::{succ, pred};
-
-    type Emuf64 = EmulationUnchecked<f64>;
-
     #[test]
     fn addition() {
+        use super::EmulationUnchecked;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = EmulationUnchecked<f64>;
         let (a, b) = (pred(1.), pred(10.));
         let (x, y) = (Emuf64::add_up(a, b), Emuf64::add_down(a, b));
-        assert!(x == succ(y) || x == y);
+        assert!(x == y.succ() || x == y);
         assert!(y <= a + b && a + b <= x);
     }
 
     #[test]
     fn subtraction() {
+        use super::EmulationUnchecked;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = EmulationUnchecked<f64>;
         let (a, b) = (pred(1.), pred(10.));
         let (x, y) = (Emuf64::sub_up(a, b), Emuf64::sub_down(a, b));
-        assert!(x == succ(y) || x == y);
+        assert!(x == y.succ() || x == y);
         assert!(y <= a - b && a - b <= x);
     }
 
     #[test]
     fn multiplication() {
+        use super::EmulationUnchecked;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = EmulationUnchecked<f64>;
         let (a, b) = (pred(1.), pred(10.));
         let (x, y) = (Emuf64::mul_up(a, b), Emuf64::mul_down(a, b));
-        assert!(x == succ(y) || x == y);
+        assert!(x == y.succ() || x == y);
         assert!(y <= a * b || a * b <= x);
     }
 
     #[test]
     fn division() {
+        use super::EmulationUnchecked;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = EmulationUnchecked<f64>;
         for &(a, b) in [
             (3., 123.),
             (2345.56, -74.12),
@@ -129,13 +143,18 @@ mod tests {
         ].iter()
         {
             let (x, y) = (Emuf64::div_up(a, b), Emuf64::div_down(a, b));
-            assert!(x == succ(y) || x == y);
+            assert!(x == y.succ() || x == y);
             assert!(y <= a / b && a / b <= x);
         }
     }
 
     #[test]
     fn sqrt() {
+        use super::EmulationUnchecked;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type Emuf64 = EmulationUnchecked<f64>;
         for &a in [
             3.,
             123.,
@@ -151,7 +170,7 @@ mod tests {
             let (x, y) = (Emuf64::sqrt_up(a), Emuf64::sqrt_down(a));
             println!("{:e}, [{:e}, {:e}]", a.sqrt(), y, x);
             println!("{:?}",twoproduct(a.sqrt(),a.sqrt()));
-            assert!(x == succ(y) || x == y);
+            assert!(x == y.succ() || x == y);
             assert!(y <= a.sqrt() && a.sqrt() <= x);
         }
     }

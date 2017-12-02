@@ -1,81 +1,49 @@
-use num_traits::{Float, One};
+use float_traits::*;
 
 #[inline]
-pub fn succ<T: FloatSuccPred>(a: T) -> T{
-    FloatSuccPred::succ(a)
+pub fn succ<T: FloatSuccPred>(a: T) -> T {
+    a.succ()
 }
 
 #[inline]
-pub fn pred<T: FloatSuccPred>(a: T) -> T{
-    FloatSuccPred::pred(a)
+pub fn pred<T: FloatSuccPred>(a: T) -> T {
+    a.pred()
 }
 
-pub trait FloatSuccPred: Float {
-    fn succ(self) -> Self;
-    fn pred(self) -> Self;
+pub trait FloatSuccPred: Abs<Output = Self> + BinaryFloat + Underflow + Clone {
+    fn succ(&self) -> Self {
+        let abs = self.clone().abs();
+        let two = Self::radix();
+        let phi = Self::eps() / Self::radix() * (Self::one() + Self::eps());
+        let min_pos_two_inveps = Self::radix() * Self::min_positive() / Self::eps();
 
-    fn eps() -> Self;
-    fn inveps() -> Self;
-    fn two_invepsp2() -> Self;
-    fn min_pos_inveps() -> Self;
-    fn min_pos() -> Self;
-    fn min_pos_subnormal() -> Self;
-}
-
-impl<T: Float> FloatSuccPred for T {
-    fn succ(self) -> Self {
-        let abs = self.abs();
-        if abs >= Self::min_pos_inveps() {
-            self + abs * (Self::eps() * Self::eps() * (Self::inveps() + Self::two_invepsp2()))
-        } else if abs < Self::min_pos() {
-            self + Self::min_pos_subnormal()
+        if abs >= min_pos_two_inveps {
+            self.clone() + abs * phi
+        } else if abs < Self::min_positive() {
+            self.clone() + Self::min_positive() * Self::eps()
         } else {
-            let c = self * Self::inveps();
-            let e = (Self::inveps() + Self::two_invepsp2()) * c.abs();
-            (c + e) * Self::eps()
-        }
-    }
-    fn pred(self) -> Self {
-        let abs = self.abs();
-        if abs >= Self::min_pos_inveps() {
-            self - abs * (Self::eps() * Self::eps() * (Self::inveps() + Self::two_invepsp2()))
-        } else if abs < Self::min_pos() {
-            self - Self::min_pos_subnormal()
-        } else {
-            let c = self * Self::inveps();
-            let e = (Self::inveps() + Self::two_invepsp2()) * c.abs();
-            (c - e) * Self::eps()
+            let c = Self::radix() / Self::eps() * self.clone();
+            let e = phi * c.clone().abs();
+            (c + e) / two * Self::eps()
         }
     }
 
-    #[inline]
-    fn eps() -> Self {
-        <Self as Float>::epsilon()
-    }
+    fn pred(&self) -> Self {
+        let abs = self.clone().abs();
+        let two = Self::radix();
+        let phi = Self::eps() / Self::radix() * (Self::one() + Self::eps());
+        let min_pos_two_inveps = Self::radix() * Self::min_positive() / Self::eps();
 
-    #[inline]
-    fn inveps() -> Self {
-        <Self as One>::one() / Self::eps()
-    }
-
-    #[inline]
-    fn two_invepsp2() -> Self {
-        (<Self as One>::one() + <Self as One>::one()) * Self::inveps() * Self::inveps()
-    }
-
-    #[inline]
-    fn min_pos_inveps() -> Self {
-        <Self as Float>::min_positive_value() * Self::inveps()
-    }
-
-    #[inline]
-    fn min_pos() -> Self {
-        <Self as Float>::min_positive_value()
-    }
-
-    #[inline]
-    fn min_pos_subnormal() -> Self {
-        (<Self as Float>::min_positive_value() * (<Self as One>::one() + <Self as One>::one())) *
-        Self::eps()
+        if abs >= min_pos_two_inveps {
+            self.clone() - abs * phi
+        } else if abs < Self::min_positive() {
+            self.clone() - Self::min_positive() * Self::eps()
+        } else {
+            let c = Self::radix() / Self::eps() * self.clone();
+            let e = phi * c.clone().abs();
+            (c - e) / two * Self::eps()
+        }
     }
 }
+
+impl<T: Abs<Output = Self> + BinaryFloat + Underflow + Clone> FloatSuccPred for T {}

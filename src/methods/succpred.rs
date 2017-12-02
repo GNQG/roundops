@@ -1,163 +1,182 @@
-use core::f64;
+use core::clone::Clone;
 use core::marker::PhantomData;
 
 use roundops::*;
-use utils::{succ, pred};
+use utils::FloatSuccPred;
+use float_traits::IEEE754Float;
 
 pub struct SuccPred<T>(PhantomData<fn(T)>);
 
-impl RoundAdd for SuccPred<f64> {
-    type Num = f64;
-    fn add_up(a: f64, b: f64) -> f64 {
-        let x = a + b;
-        if x == f64::INFINITY {
+impl<T: IEEE754Float + Clone> RoundAdd for SuccPred<T> {
+    type Num = T;
+    fn add_up(a: T, b: T) -> T {
+        let x = a.clone() + b.clone();
+        if x == T::infinity() {
             x
-        } else if x == f64::NEG_INFINITY {
-            if a == f64::NEG_INFINITY || b == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
+            if a == T::neg_infinity() || b == T::neg_infinity() {
                 x
             } else {
-                f64::MIN
+                T::min_value()
             }
         } else {
-            succ(x)
+            (x).succ()
         }
     }
-    fn add_down(a: f64, b: f64) -> f64 {
-        let x = a + b;
-        if x == f64::INFINITY {
-            if a == f64::NEG_INFINITY || b == f64::NEG_INFINITY {
+    fn add_down(a: T, b: T) -> T {
+        let x = a.clone() + b.clone();
+        if x == T::infinity() {
+            if a == T::neg_infinity() || b == T::neg_infinity() {
                 x
             } else {
-                f64::MAX
+                T::max_value()
             }
-        } else if x == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
             x
         } else {
-            pred(x)
+            (x).pred()
         }
     }
 }
 
-impl RoundSub for SuccPred<f64> {
-    type Num = f64;
+impl<T: IEEE754Float + Clone> RoundSub for SuccPred<T> {
+    type Num = T;
     #[inline]
-    fn sub_up(a: f64, b: f64) -> f64 {
+    fn sub_up(a: T, b: T) -> T {
         Self::add_up(a, -b)
     }
     #[inline]
-    fn sub_down(a: f64, b: f64) -> f64 {
+    fn sub_down(a: T, b: T) -> T {
         Self::add_down(a, -b)
     }
 }
 
-impl RoundMul for SuccPred<f64> {
-    type Num = f64;
-    fn mul_up(a: f64, b: f64) -> f64 {
-        let x = a * b;
-        if x == f64::INFINITY {
+impl<T: IEEE754Float + Clone> RoundMul for SuccPred<T> {
+    type Num = T;
+    fn mul_up(a: T, b: T) -> T {
+        let x = a.clone() * b.clone();
+        if x == T::infinity() {
             x
-        } else if x == f64::NEG_INFINITY {
-            if a == f64::NEG_INFINITY || b == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
+            if a == T::neg_infinity() || b == T::neg_infinity() {
                 x
             } else {
-                f64::MIN
+                T::min_value()
             }
         } else {
-            succ(x)
+            (x).succ()
         }
     }
-    fn mul_down(a: f64, b: f64) -> f64 {
-        let x = a * b;
-        if x == f64::INFINITY {
-            if a == f64::INFINITY || b == f64::INFINITY {
+    fn mul_down(a: T, b: T) -> T {
+        let x = a.clone() * b.clone();
+        if x == T::infinity() {
+            if a == T::infinity() || b == T::infinity() {
                 x
             } else {
-                f64::MAX
+                T::max_value()
             }
-        } else if x == f64::NEG_INFINITY {
+        } else if x == T::neg_infinity() {
             x
         } else {
-            pred(x)
-        }
-    }
-}
-
-impl RoundDiv for SuccPred<f64> {
-    type Num = f64;
-    fn div_up(a: f64, b: f64) -> f64 {
-        let x = a / b;
-        if x == f64::INFINITY {
-            x
-        } else if x == f64::NEG_INFINITY {
-            if b == 0. || a.abs() == f64::INFINITY {
-                x
-            } else {
-                f64::MIN
-            }
-        } else {
-            succ(x)
-        }
-    }
-    fn div_down(a: f64, b: f64) -> f64 {
-        let x = a / b;
-        if x == f64::INFINITY {
-            if b == 0. || a.abs() == f64::INFINITY {
-                x
-            } else {
-                f64::MAX
-            }
-        } else if x == f64::NEG_INFINITY {
-            x
-        } else {
-            pred(x)
+            (x).pred()
         }
     }
 }
 
-impl RoundSqrt for SuccPred<f64> {
-    fn sqrt_up(a: f64) -> f64 {
-        succ(a.sqrt())
+impl<T: IEEE754Float + Clone> RoundDiv for SuccPred<T> {
+    type Num = T;
+    fn div_up(a: T, b: T) -> T {
+        let x = a.clone() / b.clone();
+        if x == T::infinity() {
+            x
+        } else if x == T::neg_infinity() {
+            if b == T::zero() || a.abs() == T::infinity() {
+                x
+            } else {
+                T::min_value()
+            }
+        } else {
+            (x).succ()
+        }
     }
-    fn sqrt_down(a: f64) -> f64 {
+    fn div_down(a: T, b: T) -> T {
+        let x = a.clone() / b.clone();
+        if x == T::infinity() {
+            if b == T::zero() || a.abs() == T::infinity() {
+                x
+            } else {
+                T::max_value()
+            }
+        } else if x == T::neg_infinity() {
+            x
+        } else {
+            (x).pred()
+        }
+    }
+}
+
+impl<T: IEEE754Float + Clone> RoundSqrt for SuccPred<T> {
+    fn sqrt_up(a: T) -> T {
+        (a.sqrt().succ())
+    }
+    fn sqrt_down(a: T) -> T {
         let r = a.sqrt();
-        if r == f64::INFINITY {
-            f64::MAX
+        if r == T::infinity() {
+            T::max_value()
         } else {
-            pred(r)
+            (r).pred()
         }
     }
 }
 
 mod tests {
-    use super::SuccPred;
-    use roundops::*;
-    use super::{succ, pred};
-
-    type SPf64 = SuccPred<f64>;
-
     #[test]
     fn addition() {
-        let (a, b) = (pred(1.), pred(10.));
+        use super::SuccPred;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type SPf64 = SuccPred<f64>;
+
+        let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (SPf64::add_up(a, b), SPf64::add_down(a, b));
-        assert!(y == pred(a + b) && succ(a + b) == x);
+        assert!(y == (a + b).pred() && (a + b).succ() == x);
     }
 
     #[test]
     fn subtraction() {
-        let (a, b) = (pred(1.), pred(10.));
+        use super::SuccPred;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type SPf64 = SuccPred<f64>;
+
+        let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (SPf64::sub_up(a, b), SPf64::sub_down(a, b));
-        assert!(y == pred(a - b) && succ(a - b) == x);
+        assert!(y == (a - b).pred() && (a - b).succ() == x);
     }
 
     #[test]
     fn multiplication() {
-        let (a, b) = (pred(1.), pred(10.));
+        use super::SuccPred;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type SPf64 = SuccPred<f64>;
+
+        let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (SPf64::mul_up(a, b), SPf64::mul_down(a, b));
-        assert!(y == pred(a * b) && succ(a * b) == x);
+        assert!(y == (a * b).pred() && (a * b).succ() == x);
     }
 
     #[test]
     fn division() {
+        use super::SuccPred;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type SPf64 = SuccPred<f64>;
+
         for &(a, b) in [
             (3., 123.),
             (2345.56, -74.12),
@@ -166,12 +185,18 @@ mod tests {
         ].iter()
         {
             let (x, y) = (SPf64::div_up(a, b), SPf64::div_down(a, b));
-            assert!(y == pred(a / b) && succ(a / b) == x);
+            assert!(y == (a / b).pred() && (a / b).succ() == x);
         }
     }
 
     #[test]
     fn sqrt() {
+        use super::SuccPred;
+        use roundops::*;
+        use super::FloatSuccPred;
+
+        type SPf64 = SuccPred<f64>;
+
         for &a in [
             3.,
             123.,
@@ -184,7 +209,7 @@ mod tests {
         ].iter()
         {
             let (x, y) = (SPf64::sqrt_up(a), SPf64::sqrt_down(a));
-            assert!(y == pred(a.sqrt()) && succ(a.sqrt()) == x);
+            assert!(y == (a.sqrt().pred()) && (a.sqrt().succ()) == x);
         }
     }
 }

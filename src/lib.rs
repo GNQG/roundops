@@ -1,4 +1,5 @@
 extern crate core;
+extern crate float_traits;
 extern crate num_traits;
 
 mod roundops;
