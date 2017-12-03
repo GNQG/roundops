@@ -1,9 +1,8 @@
-use core::clone::Clone;
 use core::marker::PhantomData;
 
 use roundops::*;
 use utils::FloatSuccPred;
-use float_traits::IEEE754Float;
+use float_traits::Sqrt;
 
 pub struct SuccPredUnchecked<T>(PhantomData<fn(T)>);
 
@@ -55,7 +54,7 @@ impl<T: FloatSuccPred> RoundDiv for SuccPredUnchecked<T> {
     }
 }
 
-impl<T: IEEE754Float + Clone> RoundSqrt for SuccPredUnchecked<T> {
+impl<T: FloatSuccPred + Sqrt<Output = T>> RoundSqrt for SuccPredUnchecked<T> {
     #[inline]
     fn sqrt_up(a: T) -> T {
         a.sqrt().succ()
@@ -66,15 +65,16 @@ impl<T: IEEE754Float + Clone> RoundSqrt for SuccPredUnchecked<T> {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::SuccPredUnchecked;
+    use roundops::*;
+    use super::FloatSuccPred;
+
+    type SPf64 = SuccPredUnchecked<f64>;
+
     #[test]
     fn addition() {
-        use super::SuccPredUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type SPf64 = SuccPredUnchecked<f64>;
-
         let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (SPf64::add_up(a, b), SPf64::add_down(a, b));
         assert!(y == (a + b).pred() && (a + b).succ() == x);
@@ -82,12 +82,6 @@ mod tests {
 
     #[test]
     fn subtraction() {
-        use super::SuccPredUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type SPf64 = SuccPredUnchecked<f64>;
-
         let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (SPf64::sub_up(a, b), SPf64::sub_down(a, b));
         assert!(y == (a - b).pred() && (a - b).succ() == x);
@@ -95,12 +89,6 @@ mod tests {
 
     #[test]
     fn multiplication() {
-        use super::SuccPredUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type SPf64 = SuccPredUnchecked<f64>;
-
         let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (SPf64::mul_up(a, b), SPf64::mul_down(a, b));
         assert!(y == (a * b).pred() && (a * b).succ() == x);
@@ -108,19 +96,11 @@ mod tests {
 
     #[test]
     fn division() {
-        use super::SuccPredUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type SPf64 = SuccPredUnchecked<f64>;
-
-        for &(a, b) in [
-            (3., 123.),
-            (2345.56, -74.12),
-            (254634.13590234, 245.4556),
-            (32.1, 123.122),
-        ].iter()
-        {
+        for &(a, b) in [(3., 123.),
+                        (2345.56, -74.12),
+                        (254634.13590234, 245.4556),
+                        (32.1, 123.122)]
+                    .iter() {
             let (x, y) = (SPf64::div_up(a, b), SPf64::div_down(a, b));
             assert!(y == (a / b).pred() && (a / b).succ() == x);
         }
@@ -128,23 +108,7 @@ mod tests {
 
     #[test]
     fn sqrt() {
-        use super::SuccPredUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type SPf64 = SuccPredUnchecked<f64>;
-
-        for &a in [
-            3.,
-            123.,
-            2345.56,
-            74.12,
-            254634.13590234,
-            245.4556,
-            32.1,
-            123.122,
-        ].iter()
-        {
+        for &a in [3., 123., 2345.56, 74.12, 254634.13590234, 245.4556, 32.1, 123.122].iter() {
             let (x, y) = (SPf64::sqrt_up(a), SPf64::sqrt_down(a));
             assert!(y == (a.sqrt().pred()) && (a.sqrt().succ()) == x);
         }

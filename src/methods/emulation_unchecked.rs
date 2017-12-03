@@ -88,15 +88,16 @@ impl<T: IEEE754Float + Clone> RoundSqrt for EmulationUnchecked<T> {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::EmulationUnchecked;
+    use roundops::*;
+    use super::FloatSuccPred;
+    type Emuf64 = EmulationUnchecked<f64>;
+
     #[test]
     fn addition() {
-        use super::EmulationUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type Emuf64 = EmulationUnchecked<f64>;
-        let (a, b) = (pred(1.), pred(10.));
+        let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (Emuf64::add_up(a, b), Emuf64::add_down(a, b));
         assert!(x == y.succ() || x == y);
         assert!(y <= a + b && a + b <= x);
@@ -104,12 +105,7 @@ mod tests {
 
     #[test]
     fn subtraction() {
-        use super::EmulationUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type Emuf64 = EmulationUnchecked<f64>;
-        let (a, b) = (pred(1.), pred(10.));
+        let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (Emuf64::sub_up(a, b), Emuf64::sub_down(a, b));
         assert!(x == y.succ() || x == y);
         assert!(y <= a - b && a - b <= x);
@@ -117,12 +113,7 @@ mod tests {
 
     #[test]
     fn multiplication() {
-        use super::EmulationUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type Emuf64 = EmulationUnchecked<f64>;
-        let (a, b) = (pred(1.), pred(10.));
+        let (a, b) = ((1.).pred(), (10.).pred());
         let (x, y) = (Emuf64::mul_up(a, b), Emuf64::mul_down(a, b));
         assert!(x == y.succ() || x == y);
         assert!(y <= a * b || a * b <= x);
@@ -130,18 +121,11 @@ mod tests {
 
     #[test]
     fn division() {
-        use super::EmulationUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type Emuf64 = EmulationUnchecked<f64>;
-        for &(a, b) in [
-            (3., 123.),
-            (2345.56, -74.12),
-            (254634.13590234, 245.4556),
-            (32.1, 123.122),
-        ].iter()
-        {
+        for &(a, b) in [(3., 123.),
+                        (2345.56, -74.12),
+                        (254634.13590234, 245.4556),
+                        (32.1, 123.122)]
+                    .iter() {
             let (x, y) = (Emuf64::div_up(a, b), Emuf64::div_down(a, b));
             assert!(x == y.succ() || x == y);
             assert!(y <= a / b && a / b <= x);
@@ -150,26 +134,11 @@ mod tests {
 
     #[test]
     fn sqrt() {
-        use super::EmulationUnchecked;
-        use roundops::*;
-        use super::FloatSuccPred;
-
-        type Emuf64 = EmulationUnchecked<f64>;
-        for &a in [
-            3.,
-            123.,
-            2345.56,
-            74.12,
-            254634.13590234,
-            245.4556,
-            32.1,
-            123.122,
-        ].iter()
-        {
+        for &a in [3., 123., 2345.56, 74.12, 254634.13590234, 245.4556, 32.1, 123.122].iter() {
             use super::twoproduct;
             let (x, y) = (Emuf64::sqrt_up(a), Emuf64::sqrt_down(a));
             println!("{:e}, [{:e}, {:e}]", a.sqrt(), y, x);
-            println!("{:?}",twoproduct(a.sqrt(),a.sqrt()));
+            println!("{:?}", twoproduct(a.sqrt(), a.sqrt()));
             assert!(x == y.succ() || x == y);
             assert!(y <= a.sqrt() && a.sqrt() <= x);
         }
