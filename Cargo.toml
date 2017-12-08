@@ -13,3 +13,7 @@ categories = ["algorithms"]
 safeeft = "^0.0.4"
 num-traits = "^0.1.40"
 float-traits = "^0.0.2"
+fma = {version = "^0.1.0", optional = true}
+
+[features]
+use-fma = ["fma","safeeft/use-fma"]
