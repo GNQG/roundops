@@ -1,92 +1,114 @@
 use core::marker::PhantomData;
 
 use roundops::*;
-use super::safeeft::{safetwosum_straight as twosum, safetwoproduct_branch as twoproduct};
 use float_traits::IEEE754Float;
+use utils::safeeft::{safetwosum_branch as safetwosum, safetwoproduct_branch};
+#[cfg(feature = "use-fma")]
+use utils::safeeft::safetwoproduct_fma;
+#[cfg(feature = "use-fma")]
+use utils::fma::{fma, Fma};
 use utils::FloatSuccPred;
 
-pub struct EmulationUnchecked<T>(PhantomData<fn(T)>);
+pub struct EmulationRegularUnchecked<T>(PhantomData<fn(T)>);
+#[cfg(feature = "use-fma")]
+pub struct EmulationFmaUnchecked<T>(PhantomData<fn(T)>);
 
-impl<T: IEEE754Float + Clone> RoundAdd for EmulationUnchecked<T> {
-    type Num = T;
-    fn add_up(a: T, b: T) -> T {
-        let (x, y) = twosum(a, b);
-        if y > T::zero() { x.succ() } else { x }
-    }
-    fn add_down(a: T, b: T) -> T {
-        let (x, y) = twosum(a, b);
-        if y < T::zero() { x.pred() } else { x }
-    }
-}
-
-impl<T: IEEE754Float + Clone> RoundSub for EmulationUnchecked<T> {
-    type Num = T;
-    #[inline]
-    fn sub_up(a: T, b: T) -> T {
-        Self::add_up(a, -b)
-    }
-    #[inline]
-    fn sub_down(a: T, b: T) -> T {
-        Self::add_down(a, -b)
-    }
-}
-
-impl<T: IEEE754Float + Clone> RoundMul for EmulationUnchecked<T> {
-    type Num = T;
-    fn mul_up(a: T, b: T) -> T {
-        let (x, y) = twoproduct(a, b);
-        if y > T::zero() { x.succ() } else { x }
-    }
-    fn mul_down(a: T, b: T) -> T {
-        let (x, y) = twoproduct(a, b);
-        if y < T::zero() { x.pred() } else { x }
-    }
-}
-
-impl<T: IEEE754Float + Clone> RoundDiv for EmulationUnchecked<T> {
-    type Num = T;
-    fn div_up(a: T, b: T) -> T {
-        let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
-        let d = a.clone() / b.clone();
-        let (x, y) = twoproduct(d.clone(), b);
-        if x < a || (x == a && y > T::zero()) {
-            d.succ()
-        } else {
-            d
+macro_rules! impl_rops {
+    ($bound:ident $( + $bound1:ident)+, $method:ident, $twoproduct:ident) => (
+        impl<T: $($bound1+)+$bound> RoundAdd for $method<T> {
+            type Num = T;
+            fn add_up(a: T, b: T) -> T {
+                let (x, y) = safetwosum(a, b);
+                if y > T::zero() { x.succ() } else { x }
+            }
+            fn add_down(a: T, b: T) -> T {
+                let (x, y) = safetwosum(a, b);
+                if y < T::zero() { x.pred() } else { x }
+            }
         }
-    }
-    fn div_down(a: T, b: T) -> T {
-        let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
-        let d = a.clone() / b.clone();
-        let (x, y) = twoproduct(d.clone(), b);
-        if x > a || (x == a && y < T::zero()) {
-            d.pred()
-        } else {
-            d
+
+        impl<T: $($bound1+)+$bound> RoundSub for $method<T> {
+            type Num = T;
+            #[inline]
+            fn sub_up(a: T, b: T) -> T {
+                Self::add_up(a, -b)
+            }
+            #[inline]
+            fn sub_down(a: T, b: T) -> T {
+                Self::add_down(a, -b)
+            }
         }
-    }
+
+        impl<T: $($bound1+)+$bound> RoundMul for $method<T> {
+            type Num = T;
+            fn mul_up(a: T, b: T) -> T {
+                let (x, y) = $twoproduct(a, b);
+                if y > T::zero() { x.succ() } else { x }
+            }
+            fn mul_down(a: T, b: T) -> T {
+                let (x, y) = $twoproduct(a, b);
+                if y < T::zero() { x.pred() } else { x }
+            }
+        }
+
+        impl<T: $($bound1+)+$bound> RoundDiv for $method<T> {
+            type Num = T;
+            fn div_up(a: T, b: T) -> T {
+                let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
+                let d = a.clone() / b.clone();
+                let (x, y) = $twoproduct(d.clone(), b);
+                if x < a || (x == a && y > T::zero()) {
+                    d.succ()
+                } else {
+                    d
+                }
+            }
+            fn div_down(a: T, b: T) -> T {
+                let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
+                let d = a.clone() / b.clone();
+                let (x, y) = $twoproduct(d.clone(), b);
+                if x > a || (x == a && y < T::zero()) {
+                    d.pred()
+                } else {
+                    d
+                }
+            }
+        }
+
+        impl<T: $($bound1+)+$bound> RoundSqrt for $method<T> {
+            fn sqrt_up(a: T) -> T {
+                let r = a.clone().sqrt();
+                let (x, y) = $twoproduct(r.clone(), r.clone());
+                if x < a || (x == a && y < T::zero()) {
+                    r.succ()
+                } else {
+                    r
+                }
+            }
+            fn sqrt_down(a: T) -> T {
+                let r = a.clone().sqrt();
+                let (x, y) = $twoproduct(r.clone(), r.clone());
+                if x > a || (x == a && y > T::zero()) {
+                    r.pred()
+                } else {
+                    r
+                }
+            }
+        }
+    )
 }
 
-impl<T: IEEE754Float + Clone> RoundSqrt for EmulationUnchecked<T> {
-    fn sqrt_up(a: T) -> T {
-        let r = a.clone().sqrt();
-        let (x, y) = twoproduct(r.clone(), r.clone());
-        if x < a || (x == a && y < T::zero()) {
-            r.succ()
-        } else {
-            r
-        }
-    }
-    fn sqrt_down(a: T) -> T {
-        let r = a.clone().sqrt();
-        let (x, y) = twoproduct(r.clone(), r.clone());
-        if x > a || (x == a && y > T::zero()) {
-            r.pred()
-        } else {
-            r
-        }
-    }
-}
+impl_rops!(
+    IEEE754Float + Clone,
+    EmulationRegularUnchecked,
+    safetwoproduct_branch
+);
+#[cfg(feature = "use-fma")]
+impl_rops!(
+    IEEE754Float + Fma + Clone,
+    EmulationFmaUnchecked,
+    safetwoproduct_fma
+);
 
 #[cfg(test)]
 mod tests {
@@ -121,11 +143,13 @@ mod tests {
 
     #[test]
     fn division() {
-        for &(a, b) in [(3., 123.),
-                        (2345.56, -74.12),
-                        (254634.13590234, 245.4556),
-                        (32.1, 123.122)]
-                    .iter() {
+        for &(a, b) in [
+            (3., 123.),
+            (2345.56, -74.12),
+            (254634.13590234, 245.4556),
+            (32.1, 123.122),
+        ].iter()
+        {
             let (x, y) = (Emuf64::div_up(a, b), Emuf64::div_down(a, b));
             assert!(x == y.succ() || x == y);
             assert!(y <= a / b && a / b <= x);
@@ -134,11 +158,21 @@ mod tests {
 
     #[test]
     fn sqrt() {
-        for &a in [3., 123., 2345.56, 74.12, 254634.13590234, 245.4556, 32.1, 123.122].iter() {
+        for &a in [
+            3.,
+            123.,
+            2345.56,
+            74.12,
+            254634.13590234,
+            245.4556,
+            32.1,
+            123.122,
+        ].iter()
+        {
             use super::twoproduct;
             let (x, y) = (Emuf64::sqrt_up(a), Emuf64::sqrt_down(a));
             println!("{:e}, [{:e}, {:e}]", a.sqrt(), y, x);
-            println!("{:?}", twoproduct(a.sqrt(), a.sqrt()));
+            println!("{:?}", $twoproduct(a.sqrt(), a.sqrt()));
             assert!(x == y.succ() || x == y);
             assert!(y <= a.sqrt() && a.sqrt() <= x);
         }

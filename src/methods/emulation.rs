@@ -3,11 +3,11 @@ use core::marker::PhantomData;
 use float_traits::IEEE754Float;
 
 use roundops::*;
-use super::safeeft::{safetwosum_straight as safetwosum, safetwoproduct_branch};
+use utils::safeeft::{safetwosum_branch as safetwosum, safetwoproduct_branch};
 #[cfg(feature = "use-fma")]
-use super::safeeft::safetwoproduct_fma;
+use utils::safeeft::safetwoproduct_fma;
 #[cfg(feature = "use-fma")]
-use super::fma::{fma, Fma};
+use utils::fma::{fma, Fma};
 
 use utils::FloatSuccPred;
 

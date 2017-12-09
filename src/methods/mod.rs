@@ -1,7 +1,3 @@
-extern crate safeeft;
-#[cfg(feature = "use-fma")]
-extern crate fma;
-
 mod hardware;
 mod emulation;
 mod emulation_unchecked;
@@ -18,7 +14,13 @@ pub use self::EmulationRegular as Emulation;
 #[cfg(feature = "use-fma")]
 pub use self::EmulationFma as Emulation;
 
-pub use self::emulation_unchecked::EmulationUnchecked;
+pub use self::emulation_unchecked::EmulationRegularUnchecked;
+#[cfg(feature = "use-fma")]
+pub use self::emulation_unchecked::EmulationFmaUnchecked;
+#[cfg(not(feature = "use-fma"))]
+pub use self::EmulationRegularUnchecked as EmulationUnchecked;
+#[cfg(feature = "use-fma")]
+pub use self::EmulationFmaUnchecked as EmulationUnchecked;
 
 pub use self::succpred::SuccPred;
 pub use self::succpred_unchecked::SuccPredUnchecked;
