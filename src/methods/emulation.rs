@@ -4,15 +4,15 @@ use float_traits::IEEE754Float;
 
 use roundops::*;
 use utils::safeeft::{safetwosum_branch as safetwosum, safetwoproduct_branch};
-#[cfg(feature = "use-fma")]
+#[cfg(any(feature = "use-fma", feature = "doc"))]
 use utils::safeeft::safetwoproduct_fma;
-#[cfg(feature = "use-fma")]
+#[cfg(any(feature = "use-fma", feature = "doc"))]
 use utils::fma::{fma, Fma};
 
 use utils::FloatSuccPred;
 
 pub struct EmulationRegular<T>(PhantomData<fn(T)>);
-#[cfg(feature = "use-fma")]
+#[cfg(any(feature = "use-fma", feature = "doc"))]
 pub struct EmulationFma<T>(PhantomData<fn(T)>);
 
 macro_rules! impl_rops {
@@ -267,7 +267,7 @@ macro_rules! impl_rops {
 impl_rops!(IEEE754Float + Clone,
            EmulationRegular,
            safetwoproduct_branch);
-#[cfg(feature = "use-fma")]
+#[cfg(any(feature = "use-fma", feature = "doc"))]
 impl_rops!(IEEE754Float + Fma + Clone, EmulationFma, safetwoproduct_fma);
 
 #[cfg(test)]

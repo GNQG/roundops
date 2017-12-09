@@ -1,7 +1,5 @@
-#[doc(hidden)]
 pub extern crate safeeft;
-#[cfg(feature = "use-fma")]
-#[doc(hidden)]
+#[cfg(any(feature = "use-fma", feature = "doc"))]
 pub extern crate fma;
 
 mod succpred;
