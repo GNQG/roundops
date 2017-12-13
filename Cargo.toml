@@ -10,9 +10,9 @@ keywords = ["math", "number", "float", "rounding"]
 categories = ["algorithms"]
 
 [dependencies]
-safeeft = "^0.0.4"
+safeeft = "^0.0.5"
 num-traits = "^0.1.40"
-float-traits = "^0.0.2"
+float-traits = "^0.0.3"
 fma = {version = "^0.1.0", optional = true}
 
 [features]
