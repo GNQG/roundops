@@ -98,83 +98,86 @@ macro_rules! impl_rops {
     )
 }
 
-impl_rops!(
-    IEEE754Float + Clone,
-    EmulationRegularUnchecked,
-    safetwoproduct_branch
-);
+impl_rops!(IEEE754Float + Clone,
+           EmulationRegularUnchecked,
+           safetwoproduct_branch);
 #[cfg(any(feature = "use-fma", feature = "doc"))]
-impl_rops!(
-    IEEE754Float + Fma + Clone,
-    EmulationFmaUnchecked,
-    safetwoproduct_fma
-);
+impl_rops!(IEEE754Float + Fma + Clone,
+           EmulationFmaUnchecked,
+           safetwoproduct_fma);
 
 #[cfg(test)]
 mod tests {
-    use super::EmulationUnchecked;
+    use rand::{Rng, thread_rng};
+
     use roundops::*;
-    use super::FloatSuccPred;
-    type Emuf64 = EmulationUnchecked<f64>;
+    use utils::FloatSuccPred;
+
+    use super::EmulationRegularUnchecked;
+    type Emuf64 = EmulationRegularUnchecked<f64>;
 
     #[test]
     fn addition() {
-        let (a, b) = ((1.).pred(), (10.).pred());
-        let (x, y) = (Emuf64::add_up(a, b), Emuf64::add_down(a, b));
-        assert!(x == y.succ() || x == y);
-        assert!(y <= a + b && a + b <= x);
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (Emuf64::add_up(a, b), Emuf64::add_down(a, b));
+            if !((a + b).is_infinite() || a != a || b != b || a + b != a + b) {
+                assert!(y <= a + b && a + b <= x);
+                assert!(x == y.succ() || x == y);
+            }
+        }
     }
 
     #[test]
     fn subtraction() {
-        let (a, b) = ((1.).pred(), (10.).pred());
-        let (x, y) = (Emuf64::sub_up(a, b), Emuf64::sub_down(a, b));
-        assert!(x == y.succ() || x == y);
-        assert!(y <= a - b && a - b <= x);
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (Emuf64::sub_up(a, b), Emuf64::sub_down(a, b));
+            if !((a - b).is_infinite() || a != a || b != b || a - b != a - b) {
+                assert!(y <= a - b && a - b <= x);
+                assert!(x == y.succ() || x == y);
+            }
+        }
     }
 
     #[test]
     fn multiplication() {
-        let (a, b) = ((1.).pred(), (10.).pred());
-        let (x, y) = (Emuf64::mul_up(a, b), Emuf64::mul_down(a, b));
-        assert!(x == y.succ() || x == y);
-        assert!(y <= a * b || a * b <= x);
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (Emuf64::mul_up(a, b), Emuf64::mul_down(a, b));
+            if !((a * b).is_infinite() || a != a || b != b || a * b != a * b) {
+                assert!(y <= a * b && a * b <= x);
+                assert!(x == y.succ() || x == y);
+            }
+        }
     }
 
     #[test]
     fn division() {
-        for &(a, b) in [
-            (3., 123.),
-            (2345.56, -74.12),
-            (254634.13590234, 245.4556),
-            (32.1, 123.122),
-        ].iter()
-        {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
             let (x, y) = (Emuf64::div_up(a, b), Emuf64::div_down(a, b));
-            assert!(x == y.succ() || x == y);
-            assert!(y <= a / b && a / b <= x);
+            if !((a / b).is_infinite() || a != a || b != b || a / b != a / b) {
+                assert!(y <= a / b && a / b <= x);
+                assert!(x == y.succ() || x == y);
+            }
         }
     }
 
     #[test]
     fn sqrt() {
-        for &a in [
-            3.,
-            123.,
-            2345.56,
-            74.12,
-            254634.13590234,
-            245.4556,
-            32.1,
-            123.122,
-        ].iter()
-        {
-            use super::twoproduct;
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let a = rng.gen();
             let (x, y) = (Emuf64::sqrt_up(a), Emuf64::sqrt_down(a));
-            println!("{:e}, [{:e}, {:e}]", a.sqrt(), y, x);
-            println!("{:?}", $twoproduct(a.sqrt(), a.sqrt()));
-            assert!(x == y.succ() || x == y);
-            assert!(y <= a.sqrt() && a.sqrt() <= x);
+            if !(a.is_infinite() || a != a || a.sqrt() != a.sqrt()) {
+                assert!(y <= a.sqrt() && a.sqrt() <= x);
+                assert!(x == y.succ() || x == y);
+            }
         }
     }
 }

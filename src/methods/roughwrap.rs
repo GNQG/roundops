@@ -165,3 +165,85 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Sq
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rand::{Rng, thread_rng};
+
+    use roundops::*;
+    use utils::FloatSuccPred;
+
+    use super::RoughWrapping;
+
+    type RWf64 = RoughWrapping<f64>;
+
+    #[test]
+    fn addition() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::add_up(a, b), RWf64::add_down(a, b));
+            if !(a != a || b != b || a + b != a + b) {
+                assert!((a + b).pred() <= y && x <= (a + b).succ());
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
+    }
+
+    #[test]
+    fn subtraction() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::sub_up(a, b), RWf64::sub_down(a, b));
+            if !(a != a || b != b || a - b != a - b) {
+                assert!((a - b).pred() <= y && x <= (a - b).succ());
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
+    }
+
+    #[test]
+    fn multiplication() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::mul_up(a, b), RWf64::mul_down(a, b));
+            if !(a != a || b != b || a * b != a * b) {
+                assert!((a * b).pred() <= y && x <= (a * b).succ());
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
+    }
+
+    #[test]
+    fn division() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::div_up(a, b), RWf64::div_down(a, b));
+            if !(a != a || b != b || a / b != a / b) {
+                assert!((a / b).pred() <= y && x <= (a / b).succ());
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
+    }
+
+    #[test]
+    fn sqrt() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let a = rng.gen();
+            let (x, y) = (RWf64::sqrt_up(a), RWf64::sqrt_down(a));
+            if !(a != a || a.sqrt() != a.sqrt()) {
+                assert!(x <= a.sqrt().succ() && a.sqrt().pred() <= y);
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
+    }
+}

@@ -152,50 +152,87 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat + Sqrt<Output = T> + Clone> Roun
 
 #[cfg(test)]
 mod tests {
-    use super::SuccPred;
+    use rand::{Rng, thread_rng};
+
     use roundops::*;
-    use super::FloatSuccPred;
+    use utils::FloatSuccPred;
+
+    use super::SuccPred;
 
     type SPf64 = SuccPred<f64>;
 
     #[test]
     fn addition() {
-        let (a, b) = ((1.).pred(), (10.).pred());
-        let (x, y) = (SPf64::add_up(a, b), SPf64::add_down(a, b));
-        assert!(y == (a + b).pred() && (a + b).succ() == x);
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (SPf64::add_up(a, b), SPf64::add_down(a, b));
+            if !(a != a || b != b || a + b != a + b) {
+                assert!(y <= a + b && a + b <= x);
+                assert!(x.pred() == y.succ() || x.is_infinite() || y.is_infinite());
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
     }
 
     #[test]
     fn subtraction() {
-        let (a, b) = ((1.).pred(), (10.).pred());
-        let (x, y) = (SPf64::sub_up(a, b), SPf64::sub_down(a, b));
-        assert!(y == (a - b).pred() && (a - b).succ() == x);
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (SPf64::sub_up(a, b), SPf64::sub_down(a, b));
+            if !(a != a || b != b || a - b != a - b) {
+                assert!(y <= a - b && a - b <= x);
+                assert!(x.pred() == y.succ() || x.is_infinite() || y.is_infinite());
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
     }
 
     #[test]
     fn multiplication() {
-        let (a, b) = ((1.).pred(), (10.).pred());
-        let (x, y) = (SPf64::mul_up(a, b), SPf64::mul_down(a, b));
-        assert!(y == (a * b).pred() && (a * b).succ() == x);
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (SPf64::mul_up(a, b), SPf64::mul_down(a, b));
+            if !(a != a || b != b || a * b != a * b) {
+                assert!(y <= a * b && a * b <= x);
+                assert!(x.pred() == y.succ() || x.is_infinite() || y.is_infinite());
+            } else {
+                assert!(x != x && y != y);
+            }
+        }
     }
 
     #[test]
     fn division() {
-        for &(a, b) in [(3., 123.),
-                        (2345.56, -74.12),
-                        (254634.13590234, 245.4556),
-                        (32.1, 123.122)]
-                    .iter() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
             let (x, y) = (SPf64::div_up(a, b), SPf64::div_down(a, b));
-            assert!(y == (a / b).pred() && (a / b).succ() == x);
+            if !(a != a || b != b || a / b != a / b) {
+                assert!(y <= a / b && a / b <= x);
+                assert!(x.pred() == y.succ() || x.is_infinite() || y.is_infinite());
+            } else {
+                assert!(x != x && y != y);
+            }
         }
     }
 
     #[test]
     fn sqrt() {
-        for &a in [3., 123., 2345.56, 74.12, 254634.13590234, 245.4556, 32.1, 123.122].iter() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let a = rng.gen();
             let (x, y) = (SPf64::sqrt_up(a), SPf64::sqrt_down(a));
-            assert!(y == (a.sqrt().pred()) && (a.sqrt().succ()) == x);
+            if !(a != a || a.sqrt() != a.sqrt()) {
+                assert!(y <= a.sqrt() && a.sqrt() <= x);
+                assert!(x.pred() == y.succ() || x.is_infinite() || y.is_infinite());
+            } else {
+                assert!(x != x && y != y);
+            }
         }
     }
 }

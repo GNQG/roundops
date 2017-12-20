@@ -67,3 +67,75 @@ impl<T: BinaryFloat + Abs<Output = T> + Underflow + Sqrt<Output = T> + Clone> Ro
         roughpred_mul(a.sqrt())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rand::{Rng, thread_rng};
+
+    use roundops::*;
+    use utils::FloatSuccPred;
+
+    use super::RoughWrappingUnchecked;
+
+    type RWf64 = RoughWrappingUnchecked<f64>;
+
+    #[test]
+    fn addition() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::add_up(a, b), RWf64::add_down(a, b));
+            if !((a + b).is_infinite() || a != a || b != b || a + b != a + b) {
+                assert!((a + b).pred() <= y && x <= (a + b).succ());
+            }
+        }
+    }
+
+    #[test]
+    fn subtraction() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::sub_up(a, b), RWf64::sub_down(a, b));
+            if !((a - b).is_infinite() || a != a || b != b || a - b != a - b) {
+                assert!((a - b).pred() <= y && x <= (a - b).succ());
+            }
+        }
+    }
+
+    #[test]
+    fn multiplication() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::mul_up(a, b), RWf64::mul_down(a, b));
+            if !((a * b).is_infinite() || a != a || b != b || a * b != a * b) {
+                assert!((a * b).pred() <= y && x <= (a * b).succ());
+            }
+        }
+    }
+
+    #[test]
+    fn division() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let (a, b) = (rng.gen(), rng.gen());
+            let (x, y) = (RWf64::div_up(a, b), RWf64::div_down(a, b));
+            if !((a / b).is_infinite() || a != a || b != b || a / b != a / b) {
+                assert!((a / b).pred() <= y && x <= (a / b).succ());
+            }
+        }
+    }
+
+    #[test]
+    fn sqrt() {
+        let mut rng = thread_rng();
+        for _ in 0..10000000 {
+            let a = rng.gen();
+            let (x, y) = (RWf64::sqrt_up(a), RWf64::sqrt_down(a));
+            if !(a.is_infinite() || a != a || a.sqrt() != a.sqrt()) {
+                assert!(x <= a.sqrt().succ() && a.sqrt().pred() <= y);
+            }
+        }
+    }
+}
