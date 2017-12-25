@@ -24,7 +24,7 @@ pub trait FloatSuccPred: Abs<Output = Self> + BinaryFloat + Underflow + Clone {
         } else {
             let c = Self::radix() / Self::eps() * self.clone();
             let e = phi * c.clone().abs();
-            (c + e) / two * Self::eps()
+            (c + e) / (two * Self::eps())
         }
     }
 
@@ -41,7 +41,7 @@ pub trait FloatSuccPred: Abs<Output = Self> + BinaryFloat + Underflow + Clone {
         } else {
             let c = Self::radix() / Self::eps() * self.clone();
             let e = phi * c.clone().abs();
-            (c - e) / two * Self::eps()
+            (c - e) / (two * Self::eps())
         }
     }
 }

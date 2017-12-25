@@ -158,8 +158,8 @@ macro_rules! impl_rops {
                     }
                     if ss.clone().abs() < T::min_positive() / T::eps() * T::radix() {
                         if bb.clone().abs() < T::min_positive() / T::eps() / T::eps() {
-                            ss = ss * T::radix() * T::eps() * T::eps();
-                            bb = bb * T::radix() * T::eps() * T::eps();
+                            ss = ss * (T::radix() * T::eps() * T::eps());
+                            bb = bb * (T::radix() * T::eps() * T::eps());
                         } else {
                             if ss < T::zero() {
                                 return T::zero();
@@ -194,8 +194,8 @@ macro_rules! impl_rops {
                     }
                     if ss.clone().abs() < T::min_positive() / T::eps() * T::radix() {
                         if bb.clone().abs() < T::min_positive() / T::eps() / T::eps() {
-                            ss = ss * T::radix() * T::eps() * T::eps();
-                            bb = bb * T::radix() * T::eps() * T::eps();
+                            ss = ss * (T::radix() * T::eps() * T::eps());
+                            bb = bb * (T::radix() * T::eps() * T::eps());
                         } else {
                             if ss < T::zero() {
                                 return -T::unit_underflow();
@@ -223,8 +223,8 @@ macro_rules! impl_rops {
             fn sqrt_up(a: T) -> T {
                 let r = a.clone().sqrt();
                 if a < T::min_positive() / T::eps() * T::radix() {
-                    let (ss, rr) = (a * T::radix() / T::eps() * T::radix() / T::eps(),
-                                    r.clone() * T::radix() / T::eps());
+                    let (ss, rr) = (a * (T::radix() / T::eps() * T::radix() / T::eps()),
+                                    r.clone() * (T::radix() / T::eps()));
                     let (x, y) = $twoproduct(ss.clone(), rr.clone());
                     if x < ss || (x == ss && y < T::zero()) {
                         r.succ()
@@ -243,7 +243,7 @@ macro_rules! impl_rops {
             fn sqrt_down(a: T) -> T {
                 let r = a.clone().sqrt();
                 if a < T::min_positive() / T::eps() * T::radix() {
-                    let (ss, rr) = (a * T::radix() / T::eps() * T::radix() / T::eps(),
+                    let (ss, rr) = (a * (T::radix() / T::eps() * T::radix() / T::eps()),
                                     r.clone() * T::radix() / T::eps());
                     let (x, y) = $twoproduct(ss.clone(), rr.clone());
                     if x > ss || (x == ss && y > T::zero()) {
