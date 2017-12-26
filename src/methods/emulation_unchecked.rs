@@ -6,7 +6,7 @@ use utils::safeeft::{safetwosum_branch as safetwosum, safetwoproduct_branch};
 #[cfg(any(feature = "use-fma", feature = "doc"))]
 use utils::safeeft::safetwoproduct_fma;
 #[cfg(any(feature = "use-fma", feature = "doc"))]
-use utils::fma::{fma, Fma};
+use utils::fma::Fma;
 use utils::FloatSuccPred;
 
 #[derive(Clone)]
