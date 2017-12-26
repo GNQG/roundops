@@ -43,16 +43,18 @@ impl<S, T> RoundOps<T> for S
 }
 
 pub mod direction {
-    pub trait Direction {
+    pub trait Direction: Clone {
         type Inversed: Direction;
     }
 
+    #[derive(Clone)]
     pub enum Upward {}
 
     impl Direction for Upward {
         type Inversed = Downward;
     }
 
+    #[derive(Clone)]
     pub enum Downward {}
 
     impl Direction for Downward {
@@ -60,6 +62,7 @@ pub mod direction {
     }
 }
 
+#[derive(Clone)]
 pub struct RoundedNum<Dir: direction::Direction, Num, Method>(Num, PhantomData<(Dir, Method)>);
 
 macro_rules! impl_RNum_op {
@@ -97,18 +100,16 @@ impl_RNum_op!(direction::Downward, Div, RoundDiv, div, div_down);
 impl_RNum_sqrt!(direction::Upward, sqrt_up);
 impl_RNum_sqrt!(direction::Downward, sqrt_down);
 
-pub trait RoundedSession {
-    fn calc_with<Dir: direction::Direction,
-                 Num,
-                 Method,
-                 Func: Fn(Vec<RoundedNum<Dir, Num, Method>>) -> Vec<RoundedNum<Dir, Num, Method>>>
-        (input: Vec<Num>,
-         func: Func)
-         -> Vec<Num> {
+pub trait RoundedSession: Sized {
+    type Num;
+    fn calc_with<Dir: direction::Direction>(input: Vec<Self::Num>,
+                                            func: fn(Vec<RoundedNum<Dir, Self::Num, Self>>)
+                                                     -> Vec<RoundedNum<Dir, Self::Num, Self>>)
+                                            -> Vec<Self::Num> {
         func(input
                  .into_iter()
                  .map(|num| RoundedNum(num, PhantomData))
-                 .collect::<Vec<RoundedNum<Dir, Num, Method>>>())
+                 .collect::<Vec<_>>())
                 .into_iter()
                 .map(|e| e.0)
                 .collect::<Vec<_>>()
