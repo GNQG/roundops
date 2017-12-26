@@ -24,7 +24,10 @@ pub fn roughpred_mul<T: Abs<Output = T> + BinaryFloat + Underflow + Clone>(f: T)
     (f.clone() - T::unit_underflow()) - ((T::eps() / T::radix() * (T::one() + T::eps())) * f.abs())
 }
 
-pub struct RoughWrapping<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct RoughWrapping<
+    T: Abs<Output = T> + BinaryFloat + Infinite + 
+       Underflow + BoundedFloat + Clone>(PhantomData<fn(T)>);
 
 impl<T: Abs<Output = T> + BinaryFloat + Infinite + Underflow + BoundedFloat + Clone> RoundAdd
     for RoughWrapping<T> {
@@ -164,6 +167,11 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Sq
             roughpred_add(r)
         }
     }
+}
+
+impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Clone>
+    RoundedSession for RoughWrapping<T> {
+    type Num = T;
 }
 
 #[cfg(test)]

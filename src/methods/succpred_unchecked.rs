@@ -4,7 +4,8 @@ use roundops::*;
 use utils::FloatSuccPred;
 use float_traits::Sqrt;
 
-pub struct SuccPredUnchecked<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct SuccPredUnchecked<T: FloatSuccPred>(PhantomData<fn(T)>);
 
 impl<T: FloatSuccPred> RoundAdd for SuccPredUnchecked<T> {
     type Num = T;
@@ -63,6 +64,10 @@ impl<T: FloatSuccPred + Sqrt<Output = T>> RoundSqrt for SuccPredUnchecked<T> {
     fn sqrt_down(a: T) -> T {
         a.sqrt().pred()
     }
+}
+
+impl<T: FloatSuccPred> RoundedSession for SuccPredUnchecked<T> {
+    type Num = T;
 }
 
 #[cfg(test)]

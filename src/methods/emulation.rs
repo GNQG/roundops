@@ -11,9 +11,11 @@ use utils::fma::{fma, Fma};
 
 use utils::FloatSuccPred;
 
-pub struct EmulationRegular<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct EmulationRegular<T: IEEE754Float + Clone>(PhantomData<fn(T)>);
 #[cfg(any(feature = "use-fma", feature = "doc"))]
-pub struct EmulationFma<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct EmulationFma<T: IEEE754Float + Fma + Clone>(PhantomData<fn(T)>);
 
 macro_rules! impl_rops {
     ($bound:ident $(+$bound1:ident)+, $method:ident, $twoproduct:ident) => (
@@ -269,6 +271,14 @@ impl_rops!(IEEE754Float + Clone,
            safetwoproduct_branch);
 #[cfg(any(feature = "use-fma", feature = "doc"))]
 impl_rops!(IEEE754Float + Fma + Clone, EmulationFma, safetwoproduct_fma);
+
+impl<T: IEEE754Float + Clone> RoundedSession for EmulationRegular<T> {
+    type Num = T;
+}
+#[cfg(any(feature = "use-fma", feature = "doc"))]
+impl<T: IEEE754Float + Fma + Clone> RoundedSession for EmulationFma<T> {
+    type Num = T;
+}
 
 #[cfg(test)]
 mod tests {

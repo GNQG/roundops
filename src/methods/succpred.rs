@@ -1,13 +1,13 @@
-use core::clone::Clone;
 use core::marker::PhantomData;
 
 use roundops::*;
 use utils::FloatSuccPred;
 use float_traits::*;
 
-pub struct SuccPred<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct SuccPred<T: FloatSuccPred + Infinite + BoundedFloat>(PhantomData<fn(T)>);
 
-impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundAdd for SuccPred<T> {
+impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundAdd for SuccPred<T> {
     type Num = T;
     fn add_up(a: T, b: T) -> T {
         let x = a.clone() + b.clone();
@@ -39,7 +39,7 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundAdd for SuccPred<T
     }
 }
 
-impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundSub for SuccPred<T> {
+impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundSub for SuccPred<T> {
     type Num = T;
     fn sub_up(a: T, b: T) -> T {
         let x = a.clone() - b.clone();
@@ -71,7 +71,7 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundSub for SuccPred<T
     }
 }
 
-impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundMul for SuccPred<T> {
+impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundMul for SuccPred<T> {
     type Num = T;
     fn mul_up(a: T, b: T) -> T {
         let x = a.clone() * b.clone();
@@ -103,7 +103,7 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundMul for SuccPred<T
     }
 }
 
-impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundDiv for SuccPred<T> {
+impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundDiv for SuccPred<T> {
     type Num = T;
     fn div_up(a: T, b: T) -> T {
         let x = a.clone() / b.clone();
@@ -135,7 +135,7 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat + Clone> RoundDiv for SuccPred<T
     }
 }
 
-impl<T: FloatSuccPred + Infinite + BoundedFloat + Sqrt<Output = T> + Clone> RoundSqrt
+impl<T: FloatSuccPred + Infinite + BoundedFloat + Sqrt<Output = T>> RoundSqrt
     for SuccPred<T> {
     fn sqrt_up(a: T) -> T {
         (a.sqrt().succ())
@@ -148,6 +148,10 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat + Sqrt<Output = T> + Clone> Roun
             (r).pred()
         }
     }
+}
+
+impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundedSession for SuccPred<T> {
+    type Num = T;
 }
 
 #[cfg(test)]

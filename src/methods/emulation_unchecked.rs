@@ -9,9 +9,11 @@ use utils::safeeft::safetwoproduct_fma;
 use utils::fma::{fma, Fma};
 use utils::FloatSuccPred;
 
-pub struct EmulationRegularUnchecked<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct EmulationRegularUnchecked<T: IEEE754Float + Clone>(PhantomData<fn(T)>);
 #[cfg(any(feature = "use-fma", feature = "doc"))]
-pub struct EmulationFmaUnchecked<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct EmulationFmaUnchecked<T: IEEE754Float + Fma + Clone>(PhantomData<fn(T)>);
 
 macro_rules! impl_rops {
     ($bound:ident $( + $bound1:ident)+, $method:ident, $twoproduct:ident) => (
@@ -105,6 +107,14 @@ impl_rops!(IEEE754Float + Clone,
 impl_rops!(IEEE754Float + Fma + Clone,
            EmulationFmaUnchecked,
            safetwoproduct_fma);
+
+impl<T: IEEE754Float + Clone> RoundedSession for EmulationRegularUnchecked<T> {
+    type Num = T;
+}
+#[cfg(any(feature = "use-fma", feature = "doc"))]
+impl<T: IEEE754Float + Fma + Clone> RoundedSession for EmulationFmaUnchecked<T> {
+    type Num = T;
+}
 
 #[cfg(test)]
 mod tests {

@@ -100,8 +100,9 @@ impl_RNum_op!(direction::Downward, Div, RoundDiv, div, div_down);
 impl_RNum_sqrt!(direction::Upward, sqrt_up);
 impl_RNum_sqrt!(direction::Downward, sqrt_down);
 
-pub trait RoundedSession: Sized {
-    type Num;
+pub trait RoundedSession: Clone + Sized {
+    type Num: Clone;
+    #[inline]
     fn calc_with<Dir: direction::Direction>(input: Vec<Self::Num>,
                                             func: fn(Vec<RoundedNum<Dir, Self::Num, Self>>)
                                                      -> Vec<RoundedNum<Dir, Self::Num, Self>>)

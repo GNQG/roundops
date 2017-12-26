@@ -6,7 +6,8 @@ use float_traits::*;
 
 use super::roughwrap::{roughsucc_add, roughpred_add, roughsucc_mul, roughpred_mul};
 
-pub struct RoughWrappingUnchecked<T>(PhantomData<fn(T)>);
+#[derive(Clone)]
+pub struct RoughWrappingUnchecked<T: Abs<Output = T> + BinaryFloat + Clone>(PhantomData<fn(T)>);
 
 impl<T: Abs<Output = T> + BinaryFloat + Clone> RoundAdd for RoughWrappingUnchecked<T> {
     type Num = T;
@@ -66,6 +67,11 @@ impl<T: BinaryFloat + Abs<Output = T> + Underflow + Sqrt<Output = T> + Clone> Ro
     fn sqrt_down(a: T) -> T {
         roughpred_mul(a.sqrt())
     }
+}
+
+impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundedSession
+    for RoughWrappingUnchecked<T> {
+    type Num = T;
 }
 
 #[cfg(test)]
