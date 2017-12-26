@@ -1,3 +1,4 @@
+use core::marker::PhantomData;
 use core::ops::{Add, Sub, Mul, Div};
 
 pub trait RoundAdd {
@@ -39,4 +40,77 @@ impl<S, T> RoundOps<T> for S
     where S: RoundAdd<Num = T> + RoundSub<Num = T> + RoundMul<Num = T> + RoundDiv<Num = T>,
           T: Add + Sub + Mul + Div
 {
+}
+
+pub mod direction {
+    pub trait Direction {
+        type Inversed: Direction;
+    }
+
+    pub enum Upward {}
+
+    impl Direction for Upward {
+        type Inversed = Downward;
+    }
+
+    pub enum Downward {}
+
+    impl Direction for Downward {
+        type Inversed = Upward;
+    }
+}
+
+pub struct RoundedNum<Dir: direction::Direction, Num, Method>(Num, PhantomData<(Dir, Method)>);
+
+macro_rules! impl_RNum_op {
+    ($dir:ty, $op:ident, $rop:ident, $fn:ident, $rfn:ident) => (
+        impl<N: $op, M: $rop<Num = N>> $op<RoundedNum<$dir, N, M>>
+            for RoundedNum<$dir, N, M> {
+            type Output = RoundedNum<$dir, N, M>;
+            #[inline(always)]
+            fn $fn(self, rhs: RoundedNum<$dir, N, M>) -> RoundedNum<$dir, N, M> {
+                RoundedNum(M::$rfn(self.0, rhs.0), PhantomData)
+            }
+        }
+    )
+}
+
+macro_rules! impl_RNum_sqrt {
+    ($dir:ty, $rfn:ident) => (
+        impl<N: Mul, M: RoundSqrt + RoundMul<Num = N>> RoundedNum<$dir, N, M> {
+            #[inline(always)]
+            pub fn sqrt(self) -> RoundedNum<$dir, N, M> {
+                RoundedNum(M::$rfn(self.0), PhantomData)
+            }
+        }
+    )
+}
+
+impl_RNum_op!(direction::Upward, Add, RoundAdd, add, add_up);
+impl_RNum_op!(direction::Upward, Sub, RoundSub, sub, sub_up);
+impl_RNum_op!(direction::Upward, Mul, RoundMul, mul, mul_up);
+impl_RNum_op!(direction::Upward, Div, RoundDiv, div, div_up);
+impl_RNum_op!(direction::Downward, Add, RoundAdd, add, add_down);
+impl_RNum_op!(direction::Downward, Sub, RoundSub, sub, sub_down);
+impl_RNum_op!(direction::Downward, Mul, RoundMul, mul, mul_down);
+impl_RNum_op!(direction::Downward, Div, RoundDiv, div, div_down);
+impl_RNum_sqrt!(direction::Upward, sqrt_up);
+impl_RNum_sqrt!(direction::Downward, sqrt_down);
+
+pub trait RoundedSession {
+    fn calc_with<Dir: direction::Direction,
+                 Num,
+                 Method,
+                 Func: Fn(Vec<RoundedNum<Dir, Num, Method>>) -> Vec<RoundedNum<Dir, Num, Method>>>
+        (input: Vec<Num>,
+         func: Func)
+         -> Vec<Num> {
+        func(input
+                 .into_iter()
+                 .map(|num| RoundedNum(num, PhantomData))
+                 .collect::<Vec<RoundedNum<Dir, Num, Method>>>())
+                .into_iter()
+                .map(|e| e.0)
+                .collect::<Vec<_>>()
+    }
 }
