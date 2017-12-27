@@ -117,6 +117,13 @@ impl_rnum_op!(direction::Downward, Div, RoundDiv, div, div_down);
 impl_rnum_sqrt!(direction::Upward, sqrt_up);
 impl_rnum_sqrt!(direction::Downward, sqrt_down);
 
+#[macro_export]
+macro_rules! rnum_init {
+    (<$dir:path,$n:ty,$m:ty>,($numf:expr $(, $num:expr)+)) => (
+        (RoundedNum::<$dir, $n, $m>::new($numf) $(, RoundedNum::<$dir, $n, $m>::new($num))+)
+    )
+}
+
 pub trait RoundedSession: Clone + Sized {
     type Num: Clone;
     #[inline]
