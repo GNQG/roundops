@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use core::ops::{Add, Sub, Mul, Div};
+use core::ops::{Neg, Add, Sub, Mul, Div};
 
 pub trait RoundAdd {
     type Num: Add;
@@ -64,6 +64,23 @@ pub mod direction {
 
 #[derive(Clone)]
 pub struct RoundedNum<Dir: direction::Direction, Num, Method>(Num, PhantomData<(Dir, Method)>);
+impl<Dir: direction::Direction, Num, Method> RoundedNum<Dir,Num,Method> {
+    #[inline(always)]
+    pub fn new(num: Num) -> Self{
+        RoundedNum(num, PhantomData)
+    }
+    #[inline(always)]
+    pub fn extract(self) -> Num {
+        self.0
+    }
+}
+
+impl<D: direction::Direction, N: Neg<Output = N>, M> Neg for RoundedNum<D, N, M> {
+    type Output = RoundedNum<D, N, M>;
+    fn neg(self) -> RoundedNum<D, N, M> {
+        RoundedNum(-self.0, PhantomData)
+    }
+}
 
 macro_rules! impl_RNum_op {
     ($dir:ty, $op:ident, $rop:ident, $fn:ident, $rfn:ident) => (
