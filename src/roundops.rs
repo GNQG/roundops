@@ -82,7 +82,7 @@ impl<D: direction::Direction, N: Neg<Output = N>, M> Neg for RoundedNum<D, N, M>
     }
 }
 
-macro_rules! impl_RNum_op {
+macro_rules! impl_rnum_op {
     ($dir:ty, $op:ident, $rop:ident, $fn:ident, $rfn:ident) => (
         impl<N: $op, M: $rop<Num = N>> $op<RoundedNum<$dir, N, M>>
             for RoundedNum<$dir, N, M> {
@@ -95,7 +95,7 @@ macro_rules! impl_RNum_op {
     )
 }
 
-macro_rules! impl_RNum_sqrt {
+macro_rules! impl_rnum_sqrt {
     ($dir:ty, $rfn:ident) => (
         impl<N: Mul, M: RoundSqrt + RoundMul<Num = N>> RoundedNum<$dir, N, M> {
             #[inline(always)]
@@ -106,16 +106,16 @@ macro_rules! impl_RNum_sqrt {
     )
 }
 
-impl_RNum_op!(direction::Upward, Add, RoundAdd, add, add_up);
-impl_RNum_op!(direction::Upward, Sub, RoundSub, sub, sub_up);
-impl_RNum_op!(direction::Upward, Mul, RoundMul, mul, mul_up);
-impl_RNum_op!(direction::Upward, Div, RoundDiv, div, div_up);
-impl_RNum_op!(direction::Downward, Add, RoundAdd, add, add_down);
-impl_RNum_op!(direction::Downward, Sub, RoundSub, sub, sub_down);
-impl_RNum_op!(direction::Downward, Mul, RoundMul, mul, mul_down);
-impl_RNum_op!(direction::Downward, Div, RoundDiv, div, div_down);
-impl_RNum_sqrt!(direction::Upward, sqrt_up);
-impl_RNum_sqrt!(direction::Downward, sqrt_down);
+impl_rnum_op!(direction::Upward, Add, RoundAdd, add, add_up);
+impl_rnum_op!(direction::Upward, Sub, RoundSub, sub, sub_up);
+impl_rnum_op!(direction::Upward, Mul, RoundMul, mul, mul_up);
+impl_rnum_op!(direction::Upward, Div, RoundDiv, div, div_up);
+impl_rnum_op!(direction::Downward, Add, RoundAdd, add, add_down);
+impl_rnum_op!(direction::Downward, Sub, RoundSub, sub, sub_down);
+impl_rnum_op!(direction::Downward, Mul, RoundMul, mul, mul_down);
+impl_rnum_op!(direction::Downward, Div, RoundDiv, div, div_down);
+impl_rnum_sqrt!(direction::Upward, sqrt_up);
+impl_rnum_sqrt!(direction::Downward, sqrt_down);
 
 pub trait RoundedSession: Clone + Sized {
     type Num: Clone;
