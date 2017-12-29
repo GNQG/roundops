@@ -95,72 +95,72 @@ pub mod rmode {
             unsafe { S::set_rounding_state(self.initial_state.clone()) }
         }
         #[inline(never)]
-        pub unsafe fn upward_session<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn upward_session<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             let state = S::current_rounding_state();
             S::upward();
             let r = func();
             S::set_rounding_state(state);
-            Ok(r)
+            r
         }
         #[inline(never)]
-        pub unsafe fn downward_session<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn downward_session<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             let state = S::current_rounding_state();
             S::downward();
             let r = func();
             S::set_rounding_state(state);
-            Ok(r)
+            r
         }
         #[inline(never)]
-        pub unsafe fn to_nearest_session<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn to_nearest_session<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             let state = S::current_rounding_state();
             S::to_nearest();
             let r = func();
             S::set_rounding_state(state);
-            Ok(r)
+            r
         }
         #[inline(never)]
-        pub unsafe fn toward_zero_session<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn toward_zero_session<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             let state = S::current_rounding_state();
             S::toward_zero();
             let r = func();
             S::set_rounding_state(state);
-            Ok(r)
+            r
         }
         #[inline(never)]
-        pub unsafe fn upward_then<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn upward_then<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             S::upward();
-            Ok(func())
+            func()
         }
         #[inline(never)]
-        pub unsafe fn downward_then<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn downward_then<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             S::downward();
-            Ok(func())
+            func()
         }
         #[inline(never)]
-        pub unsafe fn to_nearest_then<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn to_nearest_then<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             S::to_nearest();
-            Ok(func())
+            func()
         }
         #[inline(never)]
-        pub unsafe fn toward_zero_then<O, F>(&mut self, func: F) -> Result<O, S::RoundingState>
+        pub unsafe fn toward_zero_then<O, F>(&mut self, func: F) -> O
             where F: Fn() -> O
         {
             S::toward_zero();
-            Ok(func())
+            func()
         }
     }
 
@@ -178,17 +178,14 @@ pub mod rmode {
         let mut c = f64::rmode_controler().unwrap();
         let x = 0.1;
         let y = 10.7;
-        let z = 0.1;
-        let w = 10.7;
 
         let v = vec![1., 10., 3146136.314, 6136.1346, 5367.67467, -134562.4537];
-        assert!(unsafe { c.upward_session(|| v.iter().sum::<f64>()).unwrap() } >
-                unsafe { c.downward_session(|| v.iter().sum::<f64>()).unwrap() });
+        assert!(unsafe { c.upward_session(|| v.iter().sum::<f64>()) } >
+                unsafe { c.downward_session(|| v.iter().sum::<f64>()) });
         println!("{} > {}",
-                 unsafe { c.upward_session(|| v.iter().sum::<f64>()).unwrap() },
-                 unsafe { c.downward_session(|| v.iter().sum::<f64>()).unwrap() });
-        assert!(unsafe { c.upward_session(|| x + y).unwrap() } >
-                unsafe { c.downward_session(|| z + w).unwrap() });
+                 unsafe { c.upward_session(|| v.iter().sum::<f64>()) },
+                 unsafe { c.downward_session(|| v.iter().sum::<f64>()) });
+        assert!(unsafe { c.upward_session(|| x + y) } > unsafe { c.downward_session(|| x + y) });
     }
 }
 
