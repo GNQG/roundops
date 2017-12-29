@@ -29,9 +29,14 @@ pub struct RoughWrapping<
     T: Abs<Output = T> + BinaryFloat + Infinite + 
        Underflow + BoundedFloat + Clone>(PhantomData<fn(T)>);
 
+impl<T: Abs<Output = T> + BinaryFloat + Infinite + 
+       Underflow + BoundedFloat + Clone> RoundingMethod for RoughWrapping<T> {
+    type HostMethod = rmode::DefaultRounding;
+    type Num = T;
+}
+
 impl<T: Abs<Output = T> + BinaryFloat + Infinite + Underflow + BoundedFloat + Clone> RoundAdd
     for RoughWrapping<T> {
-    type Num = T;
     fn add_up(a: T, b: T) -> T {
         let x = a.clone() + b.clone();
         if x == T::neg_infinity() {
@@ -60,7 +65,6 @@ impl<T: Abs<Output = T> + BinaryFloat + Infinite + Underflow + BoundedFloat + Cl
 
 impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Clone> RoundSub
     for RoughWrapping<T> {
-    type Num = T;
     fn sub_up(a: T, b: T) -> T {
         let x = a.clone() - b.clone();
         if x == T::neg_infinity() {
@@ -89,7 +93,6 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
 
 impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Clone> RoundMul
     for RoughWrapping<T> {
-    type Num = T;
     fn mul_up(a: T, b: T) -> T {
         let x = a.clone() * b.clone();
         if x == T::neg_infinity() {
@@ -118,7 +121,6 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
 
 impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Clone> RoundDiv
     for RoughWrapping<T> {
-    type Num = T;
     fn div_up(a: T, b: T) -> T {
         let x = a.clone() / b.clone();
         if x == T::neg_infinity() {

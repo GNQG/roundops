@@ -7,8 +7,12 @@ use float_traits::*;
 #[derive(Clone)]
 pub struct SuccPred<T: FloatSuccPred + Infinite + BoundedFloat>(PhantomData<fn(T)>);
 
-impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundAdd for SuccPred<T> {
+impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundingMethod for SuccPred<T> {
+    type HostMethod = rmode::DefaultRounding;
     type Num = T;
+}
+
+impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundAdd for SuccPred<T> {
     fn add_up(a: T, b: T) -> T {
         let x = a.clone() + b.clone();
         if x == T::infinity() {
@@ -40,7 +44,6 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundAdd for SuccPred<T> {
 }
 
 impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundSub for SuccPred<T> {
-    type Num = T;
     fn sub_up(a: T, b: T) -> T {
         let x = a.clone() - b.clone();
         if x == T::infinity() {
@@ -72,7 +75,6 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundSub for SuccPred<T> {
 }
 
 impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundMul for SuccPred<T> {
-    type Num = T;
     fn mul_up(a: T, b: T) -> T {
         let x = a.clone() * b.clone();
         if x == T::infinity() {
@@ -104,7 +106,6 @@ impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundMul for SuccPred<T> {
 }
 
 impl<T: FloatSuccPred + Infinite + BoundedFloat> RoundDiv for SuccPred<T> {
-    type Num = T;
     fn div_up(a: T, b: T) -> T {
         let x = a.clone() / b.clone();
         if x == T::infinity() {

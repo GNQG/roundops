@@ -9,8 +9,12 @@ use super::roughwrap::{roughsucc_add, roughpred_add, roughsucc_mul, roughpred_mu
 #[derive(Clone)]
 pub struct RoughWrappingUnchecked<T: Abs<Output = T> + BinaryFloat + Clone>(PhantomData<fn(T)>);
 
-impl<T: Abs<Output = T> + BinaryFloat + Clone> RoundAdd for RoughWrappingUnchecked<T> {
+impl<T: Abs<Output = T> + BinaryFloat + Clone> RoundingMethod for RoughWrappingUnchecked<T> {
+    type HostMethod = rmode::DefaultRounding;
     type Num = T;
+}
+
+impl<T: Abs<Output = T> + BinaryFloat + Clone> RoundAdd for RoughWrappingUnchecked<T> {
     #[inline]
     fn add_up(a: T, b: T) -> T {
         roughsucc_add(a + b)
@@ -22,7 +26,6 @@ impl<T: Abs<Output = T> + BinaryFloat + Clone> RoundAdd for RoughWrappingUncheck
 }
 
 impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundSub for RoughWrappingUnchecked<T> {
-    type Num = T;
     #[inline]
     fn sub_up(a: T, b: T) -> T {
         roughsucc_add(a - b)
@@ -34,7 +37,6 @@ impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundSub for RoughWra
 }
 
 impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundMul for RoughWrappingUnchecked<T> {
-    type Num = T;
     #[inline]
     fn mul_up(a: T, b: T) -> T {
         roughsucc_mul(a * b)
@@ -46,7 +48,6 @@ impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundMul for RoughWra
 }
 
 impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundDiv for RoughWrappingUnchecked<T> {
-    type Num = T;
     #[inline]
     fn div_up(a: T, b: T) -> T {
         roughsucc_mul(a / b)

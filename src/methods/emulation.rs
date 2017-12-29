@@ -17,10 +17,20 @@ pub struct EmulationRegular<T: IEEE754Float + Clone>(PhantomData<fn(T)>);
 #[derive(Clone)]
 pub struct EmulationFma<T: IEEE754Float + Fma + Clone>(PhantomData<fn(T)>);
 
+impl<T: IEEE754Float + Clone> RoundingMethod for EmulationRegular<T> {
+    type HostMethod = rmode::DefaultRounding;
+    type Num = T;
+}
+
+#[cfg(any(feature = "use-fma", feature = "doc"))]
+impl<T: IEEE754Float + Fma + Clone> RoundingMethod for EmulationFma<T> {
+    type HostMethod = rmode::DefaultRounding;
+    type Num = T;
+}
+
 macro_rules! impl_rops {
     ($bound:ident $(+$bound1:ident)+, $method:ident, $twoproduct:ident) => (
         impl<T: $($bound1+)+$bound> RoundAdd for $method<T> {
-            type Num = T;
             fn add_up(a: T, b: T) -> T {
                 let (x, y) = safetwosum(a.clone(), b.clone());
                 if x == T::infinity() {
@@ -52,7 +62,6 @@ macro_rules! impl_rops {
         }
 
         impl<T: $($bound1+)+$bound> RoundSub for $method<T> {
-            type Num = T;
             #[inline]
             fn sub_up(a: T, b: T) -> T {
                 Self::add_up(a, -b)
@@ -64,7 +73,6 @@ macro_rules! impl_rops {
         }
 
         impl<T: $($bound1+)+$bound> RoundMul for $method<T> {
-            type Num = T;
             fn mul_up(a: T, b: T) -> T {
                 let (x, y) = $twoproduct(a.clone(), b.clone());
                 if x == T::infinity() {
@@ -147,7 +155,6 @@ macro_rules! impl_rops {
         }
 
         impl<T: $($bound1+)+$bound> RoundDiv for $method<T> {
-            type Num = T;
             fn div_up(a: T, b: T) -> T {
                 if a == T::zero() || b == T::zero() || a.clone().abs() == T::infinity() ||
                 b.clone().abs() == T::infinity() || a != a || b != b {

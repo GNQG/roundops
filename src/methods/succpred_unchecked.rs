@@ -7,8 +7,12 @@ use float_traits::Sqrt;
 #[derive(Clone)]
 pub struct SuccPredUnchecked<T: FloatSuccPred>(PhantomData<fn(T)>);
 
-impl<T: FloatSuccPred> RoundAdd for SuccPredUnchecked<T> {
+impl<T: FloatSuccPred> RoundingMethod for SuccPredUnchecked<T> {
+    type HostMethod = rmode::DefaultRounding;
     type Num = T;
+}
+
+impl<T: FloatSuccPred> RoundAdd for SuccPredUnchecked<T> {
     #[inline]
     fn add_up(a: T, b: T) -> T {
         (a + b).succ()
@@ -20,7 +24,6 @@ impl<T: FloatSuccPred> RoundAdd for SuccPredUnchecked<T> {
 }
 
 impl<T: FloatSuccPred> RoundSub for SuccPredUnchecked<T> {
-    type Num = T;
     #[inline]
     fn sub_up(a: T, b: T) -> T {
         (a - b).succ()
@@ -32,7 +35,6 @@ impl<T: FloatSuccPred> RoundSub for SuccPredUnchecked<T> {
 }
 
 impl<T: FloatSuccPred> RoundMul for SuccPredUnchecked<T> {
-    type Num = T;
     #[inline]
     fn mul_up(a: T, b: T) -> T {
         (a * b).succ()
@@ -44,7 +46,6 @@ impl<T: FloatSuccPred> RoundMul for SuccPredUnchecked<T> {
 }
 
 impl<T: FloatSuccPred> RoundDiv for SuccPredUnchecked<T> {
-    type Num = T;
     #[inline]
     fn div_up(a: T, b: T) -> T {
         (a / b).succ()
