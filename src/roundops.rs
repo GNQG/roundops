@@ -1,9 +1,9 @@
 use core::marker::PhantomData;
 use core::ops::{Neg, Add, Sub, Mul, Div};
 
-#[cfg(target_env = "msvc")]
 pub mod rmode {
     extern "C" {
+        #[cfg(target_env = "msvc")]
         fn _controlfp_s(current: *mut u32, new: u32, mask: u32) -> u32;
     }
 
@@ -29,6 +29,7 @@ pub mod rmode {
         unsafe fn toward_zero() -> Self::RoundingState;
     }
 
+    #[cfg(target_env = "msvc")]
     macro_rules! impl_rmode {
         ($type:ty) => (
             impl EditRoundingMode for $type {
@@ -36,7 +37,15 @@ pub mod rmode {
 
                 #[inline]
                 fn rmode_controler() -> Result<RoundingModeControler<Self>, ()> {
-                    Ok(RoundingModeControler { initial_state: Self::current_rounding_state() })
+                    let raw_mut = &mut 0u32 as *mut u32;
+                    let r = unsafe {
+                        _controlfp_s(raw_mut, 0, 0)
+                    };
+                    if r == 0u32 {
+                        Ok(RoundingModeControler { initial_state: unsafe{*raw_mut} })
+                    } else {
+                        Err(())
+                    }
                 }
                 #[inline]
                 fn current_rounding_state() -> Self::RoundingState {
@@ -81,7 +90,9 @@ pub mod rmode {
         )
     }
 
+    #[cfg(target_env = "msvc")]
     impl_rmode!(f64);
+    #[cfg(target_env = "msvc")]
     impl_rmode!(f32);
 
     #[derive(Debug)]
