@@ -1,6 +1,6 @@
 [package]
 name = "roundops"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["GNQG"]
 readme = "README.md"
 license = "MIT"
