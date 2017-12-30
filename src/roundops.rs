@@ -107,7 +107,7 @@ pub mod rmode {
         }
         #[inline(never)]
         pub unsafe fn upward_session<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             let state = S::current_rounding_state();
             S::upward();
@@ -117,7 +117,7 @@ pub mod rmode {
         }
         #[inline(never)]
         pub unsafe fn downward_session<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             let state = S::current_rounding_state();
             S::downward();
@@ -127,7 +127,7 @@ pub mod rmode {
         }
         #[inline(never)]
         pub unsafe fn to_nearest_session<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             let state = S::current_rounding_state();
             S::to_nearest();
@@ -137,7 +137,7 @@ pub mod rmode {
         }
         #[inline(never)]
         pub unsafe fn toward_zero_session<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             let state = S::current_rounding_state();
             S::toward_zero();
@@ -147,28 +147,28 @@ pub mod rmode {
         }
         #[inline(never)]
         pub unsafe fn upward_then<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             S::upward();
             func()
         }
         #[inline(never)]
         pub unsafe fn downward_then<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             S::downward();
             func()
         }
         #[inline(never)]
         pub unsafe fn to_nearest_then<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             S::to_nearest();
             func()
         }
         #[inline(never)]
         pub unsafe fn toward_zero_then<O, F>(&mut self, func: F) -> O
-            where F: Fn() -> O
+            where F: FnOnce() -> O
         {
             S::toward_zero();
             func()
