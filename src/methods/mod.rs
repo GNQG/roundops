@@ -6,6 +6,8 @@ mod succpred_unchecked;
 mod roughwrap;
 mod roughwrap_unchecked;
 
+pub use self::hardware::Hardware;
+
 pub use self::emulation::EmulationRegular;
 #[cfg(any(feature = "use-fma", feature = "doc"))]
 pub use self::emulation::EmulationFma;
