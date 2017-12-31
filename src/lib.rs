@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "hwrm", feature(cfg_target_feature))]
+
 extern crate core;
 extern crate float_traits;
 extern crate num_traits;

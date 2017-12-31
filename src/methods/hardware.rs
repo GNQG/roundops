@@ -118,6 +118,7 @@ impl<T: Num + Sqrt<Output = T> + rmode::EditRoundingMode> RoundSqrt for Hardware
     }
 }
 
+#[cfg(feature = "hwrm")]
 #[cfg(test)]
 mod tests {
     use rand::{Rng, thread_rng};

@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 use core::ops::{Neg, Add, Sub, Mul, Div};
 
 pub mod rmode {
+    #[cfg(target_env = "msvc")]
     extern "C" {
-        #[cfg(target_env = "msvc")]
         fn _controlfp_s(current: *mut u32, new: u32, mask: u32) -> u32;
     }
 
@@ -22,78 +22,114 @@ pub mod rmode {
 
         fn rmode_controler() -> Result<RoundingModeControler<Self>, ()>;
         fn current_rounding_state() -> Self::RoundingState;
-        unsafe fn set_rounding_state(Self::RoundingState) -> Self::RoundingState;
-        unsafe fn upward() -> Self::RoundingState;
-        unsafe fn downward() -> Self::RoundingState;
-        unsafe fn to_nearest() -> Self::RoundingState;
-        unsafe fn toward_zero() -> Self::RoundingState;
+        unsafe fn set_rounding_state(Self::RoundingState);
+        unsafe fn upward();
+        unsafe fn downward();
+        unsafe fn to_nearest();
+        unsafe fn toward_zero();
     }
 
-    #[cfg(target_env = "msvc")]
-    macro_rules! impl_rmode {
-        ($type:ty) => (
-            impl EditRoundingMode for $type {
-                type RoundingState = u32;
+    #[cfg(all(feature = "hwrm", any(target_arch = "x86", target_arch = "x86_64")))]
+    mod rmodelocal {
+        extern crate stdsimd;
+        #[cfg(target_feature = "sse")]
+        use self::stdsimd::vendor::{_MM_GET_ROUNDING_MODE, _MM_SET_ROUNDING_MODE, _MM_ROUND_DOWN,
+                                    _MM_ROUND_NEAREST, _MM_ROUND_TOWARD_ZERO, _MM_ROUND_UP};
+        use super::{EditRoundingMode,RoundingModeControler};
+        macro_rules! impl_rmode {
+            ($type:ty) => (
+                impl EditRoundingMode for $type {
+                    #[cfg(target_feature = "-sse")]
+                    type RoundingState = u16;
+                    #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                    type RoundingState = (u16, u32);
+                    #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                    type RoundingState = u32;
 
-                #[inline]
-                fn rmode_controler() -> Result<RoundingModeControler<Self>, ()> {
-                    let raw_mut = &mut 0u32 as *mut u32;
-                    let r = unsafe {
-                        _controlfp_s(raw_mut, 0, 0)
-                    };
-                    if r == 0u32 {
-                        Ok(RoundingModeControler { initial_state: unsafe{*raw_mut} })
-                    } else {
-                        Err(())
+                    #[inline]
+                    fn rmode_controler() -> Result<RoundingModeControler<Self>, ()> {
+                        #[cfg(target_feature = "-sse")]
+                        {
+                            Ok(RoundingModeControler {
+                                initial_state: {()/* FPU */}
+                            })
+                        }
+                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                        {
+                            Ok(RoundingModeControler {
+                                initial_state: {({()/* FPU */} ,unsafe{_MM_GET_ROUNDING_MODE()})}
+                            })
+                        }
+                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                        {
+                            Ok(RoundingModeControler {
+                                initial_state: unsafe{_MM_GET_ROUNDING_MODE()}
+                            })
+                        }
+                    }
+                    #[inline]
+                    fn current_rounding_state() -> Self::RoundingState {
+                        #[cfg(target_feature = "-sse")]
+                            {()/* FPU */}
+                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                            {({()/* FPU */} ,unsafe{_MM_GET_ROUNDING_MODE()})}
+                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                            unsafe{_MM_GET_ROUNDING_MODE()}
+                    }
+                    #[inline]
+                    unsafe fn set_rounding_state(state: Self::RoundingState){
+                        #[cfg(target_feature = "-sse")]
+                            {()/* FPU */}
+                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(state.1))}
+                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                            {_MM_SET_ROUNDING_MODE(state)}
+                    }
+                    #[inline]
+                    unsafe fn upward() {
+                        #[cfg(target_feature = "-sse")]
+                            {()/* FPU */}
+                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(_MM_ROUND_UP))}
+                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_UP)}
+                    }
+                    #[inline]
+                    unsafe fn downward() {
+                        #[cfg(target_feature = "-sse")]
+                            {()/* FPU */}
+                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(_MM_ROUND_DOWN))}
+                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN)}
+                    }
+                    #[inline]
+                    unsafe fn to_nearest() {
+                        #[cfg(target_feature = "-sse")]
+                            {()/* FPU */}
+                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(_MM_ROUND_NEAREST))}
+                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST)}
+                    }
+                    #[inline]
+                    unsafe fn toward_zero() {
+                        #[cfg(target_feature = "-sse")]
+                            {()/* FPU */}
+                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
+                            {({()/* FPU */} ,{_MM_GET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO)})}
+                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO)}
                     }
                 }
-                #[inline]
-                fn current_rounding_state() -> Self::RoundingState {
-                    let raw_mut = &mut 0u32 as *mut u32;
-                    unsafe {
-                        _controlfp_s(raw_mut, 0, 0);
-                        *raw_mut
-                    }
-                }
-                #[inline]
-                unsafe fn set_rounding_state(state: u32)
-                                            -> Self::RoundingState {
-                    let raw_mut = &mut 0u32 as *mut u32;
-                    _controlfp_s(raw_mut, state, 0x300);
-                    *raw_mut
-                }
-                #[inline]
-                unsafe fn upward() -> Self::RoundingState {
-                    let raw_mut = &mut 0u32 as *mut u32;
-                    _controlfp_s(raw_mut, 0x200, 0x300);
-                    *raw_mut
-                }
-                #[inline]
-                unsafe fn downward() -> Self::RoundingState {
-                    let raw_mut = &mut 0u32 as *mut u32;
-                    _controlfp_s(raw_mut, 0x100, 0x300);
-                    *raw_mut
-                }
-                #[inline]
-                unsafe fn to_nearest() -> Self::RoundingState {
-                    let raw_mut = &mut 0u32 as *mut u32;
-                    _controlfp_s(raw_mut, 0x000, 0x300);
-                    *raw_mut
-                }
-                #[inline]
-                unsafe fn toward_zero() -> Self::RoundingState {
-                    let raw_mut = &mut 0u32 as *mut u32;
-                    _controlfp_s(raw_mut, 0x300, 0x300);
-                    *raw_mut
-                }
-            }
-        )
+            )
+        }
+        impl_rmode!(f64);
+        impl_rmode!(f32);
     }
 
-    #[cfg(target_env = "msvc")]
-    impl_rmode!(f64);
-    #[cfg(target_env = "msvc")]
-    impl_rmode!(f32);
+    #[cfg(all(feature = "hwrm", any(target_arch = "x86", target_arch = "x86_64")))]
+    pub use self::rmodelocal::*;
 
     #[derive(Debug)]
     pub struct RoundingModeControler<S: EditRoundingMode> {
@@ -102,7 +138,7 @@ pub mod rmode {
 
     impl<S: EditRoundingMode> RoundingModeControler<S> {
         #[inline]
-        pub fn rollback(&self) -> S::RoundingState {
+        pub fn rollback(&self) {
             unsafe { S::set_rounding_state(self.initial_state.clone()) }
         }
         #[inline(never)]
@@ -183,6 +219,7 @@ pub mod rmode {
         }
     }
 
+    #[cfg(feature = "hwrm")]
     #[test]
     fn rf64() {
         use roundops::rmode::*;
