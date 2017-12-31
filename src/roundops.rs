@@ -32,35 +32,36 @@ pub mod rmode {
     #[cfg(all(feature = "hwrm", any(target_arch = "x86", target_arch = "x86_64")))]
     mod rmodelocal {
         extern crate stdsimd;
-        #[cfg(target_feature = "sse")]
+        #[cfg(target_feature = "sse2")]
         use self::stdsimd::vendor::{_MM_GET_ROUNDING_MODE, _MM_SET_ROUNDING_MODE, _MM_ROUND_DOWN,
                                     _MM_ROUND_NEAREST, _MM_ROUND_TOWARD_ZERO, _MM_ROUND_UP};
         use super::{EditRoundingMode,RoundingModeControler};
         macro_rules! impl_rmode {
             ($type:ty) => (
                 impl EditRoundingMode for $type {
-                    #[cfg(target_feature = "-sse")]
+                    // "On x86, the x87 FPU is used for float operations if the SSE/SSE2 extensions
+                    //  are not available."
+                    // cited from: https://github.com/rust-lang/rust/blob/master/src/libcore/num/dec2flt/algorithm.rs#L41
+                    #[cfg(target_feature = "-sse2")]
+                    // FPU Control Word
                     type RoundingState = u16;
-                    #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                    type RoundingState = (u16, u32);
-                    #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                    #[cfg(target_feature = "sse2")]
+                    // MXCSR register
                     type RoundingState = u32;
 
                     #[inline]
                     fn rmode_controler() -> Result<RoundingModeControler<Self>, ()> {
-                        #[cfg(target_feature = "-sse")]
+                        #[cfg(target_feature = "-sse2")]
                         {
                             Ok(RoundingModeControler {
-                                initial_state: {()/* FPU */}
+                                initial_state: {
+                                    let cw = 0u16;
+                                    unsafe { asm!("fnstcw $0" : "=*m" (&cw) ::: "volatile") };
+                                    cw
+                                }
                             })
                         }
-                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                        {
-                            Ok(RoundingModeControler {
-                                initial_state: {({()/* FPU */} ,unsafe{_MM_GET_ROUNDING_MODE()})}
-                            })
-                        }
-                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
+                        #[cfg(target_feature = "sse2")]
                         {
                             Ok(RoundingModeControler {
                                 initial_state: unsafe{_MM_GET_ROUNDING_MODE()}
@@ -69,57 +70,74 @@ pub mod rmode {
                     }
                     #[inline]
                     fn current_rounding_state() -> Self::RoundingState {
-                        #[cfg(target_feature = "-sse")]
-                            {()/* FPU */}
-                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                            {({()/* FPU */} ,unsafe{_MM_GET_ROUNDING_MODE()})}
-                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
-                            unsafe{_MM_GET_ROUNDING_MODE()}
+                        #[cfg(target_feature = "-sse2")]
+                        {
+                            let cw = 0u16;
+                            unsafe { asm!("fnstcw $0" : "=*m" (&cw) ::: "volatile") };
+                            cw
+                        }
+                        #[cfg(target_feature = "sse2")]
+                        unsafe{ _MM_GET_ROUNDING_MODE() }
                     }
                     #[inline]
                     unsafe fn set_rounding_state(state: Self::RoundingState){
-                        #[cfg(target_feature = "-sse")]
-                            {()/* FPU */}
-                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(state.1))}
-                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
-                            {_MM_SET_ROUNDING_MODE(state)}
+                        #[cfg(target_feature = "-sse2")]
+                        asm!("fldcw $0"
+                            :
+                            : "m" ((Self::current_rounding_state() & 0xF3FF ) | (state & 0x0C00 ))
+                            :
+                            : "volatile"
+                        );
+                        #[cfg(target_feature = "sse2")]
+                        _MM_SET_ROUNDING_MODE(state);
                     }
                     #[inline]
                     unsafe fn upward() {
-                        #[cfg(target_feature = "-sse")]
-                            {()/* FPU */}
-                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(_MM_ROUND_UP))}
-                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
-                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_UP)}
+                        #[cfg(target_feature = "-sse2")]
+                        asm!("fldcw $0"
+                            :
+                            : "m" ((self.initial_state & 0xF3FF ) | 0x0200 )
+                            :
+                            : "volatile"
+                        );
+                        #[cfg(target_feature = "sse2")]
+                        _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
                     }
                     #[inline]
                     unsafe fn downward() {
-                        #[cfg(target_feature = "-sse")]
-                            {()/* FPU */}
-                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(_MM_ROUND_DOWN))}
-                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
-                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN)}
+                        #[cfg(target_feature = "-sse2")]
+                        asm!("fldcw $0"
+                            :
+                            : "m" ((self.initial_state & 0xF3FF ) | 0x0100 )
+                            :
+                            : "volatile"
+                        );
+                        #[cfg(target_feature = "sse2")]
+                        _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
                     }
                     #[inline]
                     unsafe fn to_nearest() {
-                        #[cfg(target_feature = "-sse")]
-                            {()/* FPU */}
-                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                            {({()/* FPU */} ,_MM_GET_ROUNDING_MODE(_MM_ROUND_NEAREST))}
-                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
-                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST)}
+                        #[cfg(target_feature = "-sse2")]
+                        asm!("fldcw $0"
+                            :
+                            : "m" ((self.initial_state & 0xF3FF ) | 0x0000 )
+                            :
+                            : "volatile"
+                        );
+                        #[cfg(target_feature = "sse2")]
+                        _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
                     }
                     #[inline]
                     unsafe fn toward_zero() {
-                        #[cfg(target_feature = "-sse")]
-                            {()/* FPU */}
-                        #[cfg(all(target_arch = "x86",target_feature = "sse"))]
-                            {({()/* FPU */} ,{_MM_GET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO)})}
-                        #[cfg(all(target_arch = "x86_64",target_feature = "sse"))]
-                            {_MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO)}
+                        #[cfg(target_feature = "-sse2")]
+                        asm!("fldcw $0"
+                            :
+                            : "m" ((self.initial_state & 0xF3FF ) | 0x0300 )
+                            :
+                            : "volatile"
+                        );
+                        #[cfg(target_feature = "sse2")]
+                        _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
                     }
                 }
             )
@@ -127,9 +145,6 @@ pub mod rmode {
         impl_rmode!(f64);
         impl_rmode!(f32);
     }
-
-    #[cfg(all(feature = "hwrm", any(target_arch = "x86", target_arch = "x86_64")))]
-    pub use self::rmodelocal::*;
 
     #[derive(Debug)]
     pub struct RoundingModeControler<S: EditRoundingMode> {
