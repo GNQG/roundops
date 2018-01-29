@@ -46,7 +46,7 @@ impl<T: Abs<Output = T> + BinaryFloat + Infinite + Underflow + BoundedFloat + Cl
                 T::min_value()
             }
         } else {
-            roughsucc(x)
+            roughsucc_add(x)
         }
     }
     fn add_down(a: T, b: T) -> T {
@@ -58,7 +58,7 @@ impl<T: Abs<Output = T> + BinaryFloat + Infinite + Underflow + BoundedFloat + Cl
                 T::max_value()
             }
         } else {
-            roughpred(x)
+            roughpred_add(x)
         }
     }
 }
@@ -74,7 +74,7 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
                 T::min_value()
             }
         } else {
-            roughsucc(x)
+            roughsucc_add(x)
         }
     }
     fn sub_down(a: T, b: T) -> T {
@@ -86,7 +86,7 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
                 T::max_value()
             }
         } else {
-            roughpred(x)
+            roughpred_add(x)
         }
     }
 }
@@ -102,7 +102,7 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
                 T::min_value()
             }
         } else {
-            roughsucc(x)
+            roughsucc_mul(x)
         }
     }
     fn mul_down(a: T, b: T) -> T {
@@ -114,7 +114,7 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
                 T::max_value()
             }
         } else {
-            roughpred(x)
+            roughpred_mul(x)
         }
     }
 }
@@ -130,7 +130,7 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
                 T::min_value()
             }
         } else {
-            roughsucc(x)
+            roughsucc_mul(x)
         }
     }
     fn div_down(a: T, b: T) -> T {
@@ -142,7 +142,7 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Cl
                 T::max_value()
             }
         } else {
-            roughpred(x)
+            roughpred_mul(x)
         }
     }
 }
@@ -159,14 +159,14 @@ impl<T: BinaryFloat + Abs<Output = T> + Infinite + Underflow + BoundedFloat + Sq
  *  as exact T and less than T::min_positive().
  *  roughsucc(r)
  */
-        roughsucc(r)
+        roughsucc_add(r)
     }
     fn sqrt_down(a: T) -> T {
         let r = a.sqrt();
         if r == T::infinity() {
             T::max_value()
         } else {
-            roughpred(r)
+            roughpred_add(r)
         }
     }
 }
