@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 use roundops::*;
 use float_traits::*;
 
-use super::roughwrap::{roughsucc_add, roughpred_add, roughsucc_mul, roughpred_mul};
+use super::roughwrap::{roughsucc, roughpred};
 
 #[derive(Clone)]
 pub struct RoughWrappingUnchecked<T: Abs<Output = T> + BinaryFloat + Clone>(PhantomData<fn(T)>);
@@ -14,47 +14,47 @@ impl<T: Abs<Output = T> + BinaryFloat + Clone> RoundingMethod for RoughWrappingU
     type Num = T;
 }
 
-impl<T: Abs<Output = T> + BinaryFloat + Clone> RoundAdd for RoughWrappingUnchecked<T> {
+impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundAdd for RoughWrappingUnchecked<T> {
     #[inline]
     fn add_up(a: T, b: T) -> T {
-        roughsucc_add(a + b)
+        roughsucc(a + b)
     }
     #[inline]
     fn add_down(a: T, b: T) -> T {
-        roughpred_add(a + b)
+        roughpred(a + b)
     }
 }
 
 impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundSub for RoughWrappingUnchecked<T> {
     #[inline]
     fn sub_up(a: T, b: T) -> T {
-        roughsucc_add(a - b)
+        roughsucc(a - b)
     }
     #[inline]
     fn sub_down(a: T, b: T) -> T {
-        roughpred_add(a - b)
+        roughpred(a - b)
     }
 }
 
 impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundMul for RoughWrappingUnchecked<T> {
     #[inline]
     fn mul_up(a: T, b: T) -> T {
-        roughsucc_mul(a * b)
+        roughsucc(a * b)
     }
     #[inline]
     fn mul_down(a: T, b: T) -> T {
-        roughpred_mul(a * b)
+        roughpred(a * b)
     }
 }
 
 impl<T: BinaryFloat + Abs<Output = T> + Underflow + Clone> RoundDiv for RoughWrappingUnchecked<T> {
     #[inline]
     fn div_up(a: T, b: T) -> T {
-        roughsucc_mul(a / b)
+        roughsucc(a / b)
     }
     #[inline]
     fn div_down(a: T, b: T) -> T {
-        roughpred_mul(a / b)
+        roughpred(a / b)
     }
 }
 
@@ -62,11 +62,11 @@ impl<T: BinaryFloat + Abs<Output = T> + Underflow + Sqrt<Output = T> + Clone> Ro
     for RoughWrappingUnchecked<T> {
     #[inline]
     fn sqrt_up(a: T) -> T {
-        roughsucc_mul(a.sqrt())
+        roughsucc(a.sqrt())
     }
     #[inline]
     fn sqrt_down(a: T) -> T {
-        roughpred_mul(a.sqrt())
+        roughpred(a.sqrt())
     }
 }
 
