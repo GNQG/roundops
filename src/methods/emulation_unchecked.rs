@@ -66,7 +66,7 @@ macro_rules! impl_rops {
                 let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
                 let d = a.clone() / b.clone();
                 let (x, y) = $twoproduct(d.clone(), b);
-                if x < a || (x == a && y > T::zero()) {
+                if x < a || (x == a && y < T::zero()) {
                     d.succ()
                 } else {
                     d
@@ -76,7 +76,7 @@ macro_rules! impl_rops {
                 let (a, b) = if b < T::zero() { (-a, -b) } else { (a, b) };
                 let d = a.clone() / b.clone();
                 let (x, y) = $twoproduct(d.clone(), b);
-                if x > a || (x == a && y < T::zero()) {
+                if x > a || (x == a && y > T::zero()) {
                     d.pred()
                 } else {
                     d

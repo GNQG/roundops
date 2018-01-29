@@ -182,7 +182,7 @@ macro_rules! impl_rops {
                         if d > T::zero() { d } else { T::min_value() }
                     } else {
                         let (x, y) = $twoproduct(d.clone(), bb.clone());
-                        if x < ss || (x == ss && y > T::zero()) {
+                        if x < ss || (x == ss && y < T::zero()) {
                             d.succ()
                         } else {
                             d
@@ -218,7 +218,7 @@ macro_rules! impl_rops {
                         if d > T::zero() { T::max_value() } else { d }
                     } else {
                         let (x, y) = $twoproduct(d.clone(), bb.clone());
-                        if x > ss || (x == ss && y < T::zero()) {
+                        if x > ss || (x == ss && y > T::zero()) {
                             d.pred()
                         } else {
                             d
