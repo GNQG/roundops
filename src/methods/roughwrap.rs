@@ -5,13 +5,23 @@ use roundops::*;
 use float_traits::*;
 
 #[inline]
-pub fn roughsucc<T: Abs<Output = T> + BinaryFloat + Underflow + Clone>(f: T) -> T {
+pub fn roughsucc_add<T: Abs<Output = T> + BinaryFloat + Clone>(f: T) -> T {
+    f.clone() + (T::eps() / T::radix() * (T::one() + T::one() / T::radix()) * f.abs())
+}
+
+#[inline]
+pub fn roughpred_add<T: Abs<Output = T> + BinaryFloat + Clone>(f: T) -> T {
+    f.clone() - (T::eps() / T::radix() * (T::one() + T::one() / T::radix()) * f.abs())
+}
+
+#[inline]
+pub fn roughsucc_mul<T: Abs<Output = T> + BinaryFloat + Underflow + Clone>(f: T) -> T {
     f.clone() + (T::unit_underflow() + ((T::eps() / T::radix() * (T::one() + T::eps())) * f.abs()))
 }
 
 #[inline]
-pub fn roughpred<T: Abs<Output = T> + BinaryFloat + Underflow + Clone>(f: T) -> T {
-    f.clone() - (T::unit_underflow() + ((T::eps() / T::radix() * (T::one() + T::eps())) * f.abs()))
+pub fn roughpred_mul<T: Abs<Output = T> + BinaryFloat + Underflow + Clone>(f: T) -> T {
+    f.clone() - (T::unit_underflow() - ((T::eps() / T::radix() * (T::one() + T::eps())) * f.abs()))
 }
 
 #[derive(Clone)]
