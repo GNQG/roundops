@@ -9,10 +9,12 @@ pub mod rmode {
 
     pub trait NativeRoundingMode {}
 
+    #[derive(Clone)]
     pub enum DefaultRounding {}
 
     impl NativeRoundingMode for DefaultRounding {}
 
+    #[derive(Clone)]
     pub enum Switchable {}
 
     impl NativeRoundingMode for Switchable {}
